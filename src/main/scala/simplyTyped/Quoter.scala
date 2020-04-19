@@ -4,7 +4,7 @@ object Quoter {
 
   def quote(value: Value, bindersPassed: Int = 0): CheckableTerm =
     value match {
-      case LambdaValue(function) => Lam(quote(function(Value.vfree(Name.Quote(bindersPassed))), bindersPassed + 1))
+      case LambdaValue(function) => Lambda(quote(function(Value.vfree(Name.Quote(bindersPassed))), bindersPassed + 1))
       case NeutralValue(value) => Inf(neutralQuote(value, bindersPassed))
     }
 
@@ -14,8 +14,8 @@ object Quoter {
   }
 
   private def boundFree(name: Name, bindersPassed: Int): InferrableTerm = name match {
-    case Name.Quote(n) => Bound(bindersPassed - n - 1)
-    case _ => Free(name)
+    case Name.Quote(n) => BoundVariable(bindersPassed - n - 1)
+    case _ => FreeVariable(name)
   }
 
 }

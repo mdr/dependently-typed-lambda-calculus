@@ -13,14 +13,14 @@ object Evaluator {
   def eval(term: InferrableTerm, env: Environment = Environment()): Value =
     term match {
       case Ann(subterm, _) => eval(subterm, env)
-      case Free(name) => Value.vfree(name)
-      case Bound(n) => env.lookup(n)
+      case FreeVariable(name) => Value.vfree(name)
+      case BoundVariable(n) => env.lookup(n)
       case App(function, argument) => vapp(eval(function, env), eval(argument, env))
     }
 
   private def eval(term: CheckableTerm, env: Environment): Value = term match {
     case Inf(subterm) => eval(subterm, env)
-    case Lam(body) => LambdaValue(argument => eval(body, env.extend(argument)))
+    case Lambda(body) => LambdaValue(argument => eval(body, env.extend(argument)))
   }
 
   private def vapp(function: Value, argument: Value): Value =

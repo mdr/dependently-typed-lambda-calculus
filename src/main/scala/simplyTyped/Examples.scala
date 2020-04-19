@@ -1,11 +1,13 @@
 package simplyTyped
 
+import scala.language.implicitConversions
+
 object Examples extends scala.App {
 
-  val id: CheckableTerm = Lam(Inf(Bound(0)))
-  val const: CheckableTerm = Lam(Lam(Inf(Bound(1))))
+  val id: CheckableTerm = Lambda(Inf(BoundVariable(0)))
+  val const: CheckableTerm = Lambda(Lambda(Inf(BoundVariable(1))))
 
-  def free(name: String) = Inf(Free(name))
+  def free(name: String) = Inf(FreeVariable(name))
 
   // (id : a -> a) y
   val term1: InferrableTerm = (id :: (FreeType("a") -> FreeType("a"))) (free("y"))
@@ -46,8 +48,18 @@ object Examples extends scala.App {
       .withGlobalKind("String", *)
       .withGlobalType("n", FreeType("Int"))
     // n : String
-    val term = Ann(Inf(Free("n")), FreeType("String"))
+    val term = Ann(Inf(FreeVariable("n")), FreeType("String"))
     println(TypeChecker.inferType(term, Γ))
   }
 
+
+  {
+    val Γ = Context.empty
+      .withGlobalKind("Int", *)
+      .withGlobalKind("String", *)
+      .withGlobalType("s", FreeType("String"))
+
+    val term = Lambda(BoundVariable(0)(FreeVariable("s"))) :: (FreeType("String") -> FreeType("Int")) -> FreeType("Int")
+    println(TypeChecker.inferType(term, Γ))
+  }
 }

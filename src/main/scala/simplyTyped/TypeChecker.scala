@@ -8,28 +8,28 @@ object TypeChecker {
 
   private def throwError(error: String) = Left(error)
 
-  def checkKind(context: Context, typ: Type, k: Kind): Result[Unit] =
+  def checkKind(typ: Type, kind: Kind, Γ: Context): Result[Unit] =
     typ match {
-      case FreeType(name) => context(name) match {
-        case Some(HasKind(*)) => Right(())
+      case FreeType(name) => Γ(name) match {
+        case Some(HasKind(_)) => Right(())
         case Some(HasType(_)) => throwError(s"type $name has type instead of kind")
         case None => throwError(s"unknown identifier $name")
       }
       case FunctionType(functionType, argumentType) =>
         for {
-          _ <- checkKind(context, functionType, *)
-          _ <- checkKind(context, argumentType, *)
+          _ <- checkKind(functionType, *, Γ)
+          _ <- checkKind(argumentType, *, Γ)
         } yield ()
     }
 
-  def inferType(term: InferrableTerm, Γ: Context, i: Int = 0): Result[Type] =
+  def inferType(term: InferrableTerm, Γ: Context, bindersPassed: Int = 0): Result[Type] =
     term match {
       case Ann(term, typ) =>
         for {
-          _ <- checkKind(Γ, typ, *)
-          _ <- checkType(term, typ, Γ, i)
+          _ <- checkKind(typ, *, Γ)
+          _ <- checkType(term, typ, Γ, bindersPassed)
         } yield typ
-      case Free(name) =>
+      case FreeVariable(name) =>
         Γ(name) match {
           case Some(HasType(typ)) => Right(typ)
           case Some(HasKind(_)) => throwError(s"$name unexpectedly has a kind, not a type")
@@ -37,43 +37,53 @@ object TypeChecker {
         }
       case App(function, argument) =>
         for {
-          functionType <- inferType(function, Γ, i)
+          functionType <- inferType(function, Γ, bindersPassed)
           resultType <- functionType match {
             case FunctionType(argumentType, resultType) =>
               for {
-                _ <- checkType(argument, argumentType, Γ, i)
+                _ <- checkType(argument, argumentType, Γ, bindersPassed)
               } yield resultType
             case FreeType(_) => throwError("Illegal application")
           }
         } yield resultType
-      case Bound(_) => throwError("Unexpected Bound term in type checking")
+      case BoundVariable(_) => throwError("Unexpected Bound term in type checking")
     }
 
+
+  implicit class RichInferrableTerm(term: InferrableTerm) {
+
+    def substitute(i: Int, replacement: InferrableTerm): InferrableTerm = term match {
+      case Ann(term, typ) => Ann(term.substitute(i, replacement), typ)
+      case BoundVariable(j) => if (i == j) replacement else BoundVariable(j)
+      case FreeVariable(name) => FreeVariable(name)
+      case App(function, argument) => App(function.substitute(i, replacement), argument.substitute(i, replacement))
+    }
+  }
+
+  implicit class RichCheckableTerm(term: CheckableTerm) {
+
+    def substitute(i: Int, replacement: InferrableTerm): CheckableTerm = term match {
+      case Inf(term) => Inf(term.substitute(i, replacement))
+      case Lambda(body) => Lambda(body.substitute(i + 1, replacement))
+    }
+
+  }
+
   @tailrec
-  def checkType(term: CheckableTerm, expectedType: Type, Γ: Context, i: Int): Result[Unit] =
+  def checkType(term: CheckableTerm, expectedType: Type, Γ: Context, bindersPassed: Int): Result[Unit] =
     term match {
       case Inf(term) =>
         for {
-          inferredType <- inferType(term, Γ, i)
+          inferredType <- inferType(term, Γ, bindersPassed)
           _ <- if (inferredType == expectedType) Right(()) else throwError(s"Type mismatch. Expected type '$expectedType', but was inferred as '$inferredType'.")
         } yield ()
-      case Lam(body) => expectedType match {
+      case Lambda(body) => expectedType match {
         case FunctionType(argumentType, resultType) =>
-          val substitutedTerm = substitute(0, Free(Name.Local(i)), body)
-          checkType(substitutedTerm, resultType, Γ.withLocalType(i, argumentType), i + 1)
+          val freshName = Name.Local(bindersPassed)
+          val substitutedTerm = body.substitute(0, FreeVariable(freshName))
+          checkType(substitutedTerm, resultType, Γ.withLocalType(bindersPassed, argumentType), bindersPassed + 1)
         case FreeType(_) => throwError("type mismatch Lam/FreeType")
       }
     }
 
-  private def substitute(i: Int, replacement: InferrableTerm, term: InferrableTerm): InferrableTerm = term match {
-    case Ann(term, typ) => Ann(substitute(i, replacement, term), typ)
-    case Bound(j) => if (i == j) replacement else Bound(j)
-    case Free(name) => Free(name)
-    case App(function, argument) => App(substitute(i, replacement, function), substitute(i, replacement, argument))
-  }
-
-  private def substitute(i: Int, replacement: InferrableTerm, term: CheckableTerm): CheckableTerm = term match {
-    case Inf(term) => Inf(substitute(i, replacement, term))
-    case Lam(body) => Lam(substitute(i + 1, replacement, body))
-  }
 }
