@@ -3,6 +3,7 @@ package simplyTyped
 import scala.annotation.tailrec
 
 object TypeChecker {
+  import Term._
 
   type Result[A] = Either[String, A]
 
@@ -24,7 +25,7 @@ object TypeChecker {
 
   def inferType(term: InferrableTerm, Γ: Context, bindersPassed: Int = 0): Result[Type] =
     term match {
-      case Ann(term, typ) =>
+      case Annotated(term, typ) =>
         for {
           _ <- checkKind(typ, *, Γ)
           _ <- checkType(term, typ, Γ, bindersPassed)
@@ -35,7 +36,7 @@ object TypeChecker {
           case Some(HasKind(_)) => throwError(s"$name unexpectedly has a kind, not a type")
           case None => throwError(s"Unknown identifier: $name")
         }
-      case App(function, argument) =>
+      case Application(function, argument) =>
         for {
           functionType <- inferType(function, Γ, bindersPassed)
           resultType <- functionType match {
@@ -53,10 +54,10 @@ object TypeChecker {
   implicit class RichInferrableTerm(term: InferrableTerm) {
 
     def substitute(i: Int, replacement: InferrableTerm): InferrableTerm = term match {
-      case Ann(term, typ) => Ann(term.substitute(i, replacement), typ)
+      case Annotated(term, typ) => Annotated(term.substitute(i, replacement), typ)
       case BoundVariable(j) => if (i == j) replacement else BoundVariable(j)
       case FreeVariable(name) => FreeVariable(name)
-      case App(function, argument) => App(function.substitute(i, replacement), argument.substitute(i, replacement))
+      case Application(function, argument) => Application(function.substitute(i, replacement), argument.substitute(i, replacement))
     }
   }
 

@@ -1,32 +1,46 @@
 package simplyTyped
 
-case class Environment(bindings: Seq[Value] = Seq.empty) {
+import simplyTyped.Name.Global
 
-  def lookup(n: Int): Value = bindings(n)
+object Environment {
 
-  def extend(v: Value): Environment = Environment(v +: bindings)
+  val empty: Environment = Environment()
+
+}
+
+case class Environment(bindings: Seq[Value] = Seq.empty, namedValues: Map[String, Value] = Map.empty) {
+
+  def apply(n: Int): Option[Value] = bindings.lift(n)
+
+  def apply(name: String): Option[Value] = namedValues.get(name)
+
+  def extendWith(value: Value): Environment = copy(bindings = value +: bindings)
+
+  def extendWith(name: String, value: Value): Environment = copy(namedValues = namedValues + (name -> value))
 
 }
 
 object Evaluator {
 
-  def eval(term: InferrableTerm, env: Environment = Environment()): Value =
+  def eval(term: InferrableTerm, env: Environment = Environment.empty): Value =
     term match {
-      case Ann(subterm, _) => eval(subterm, env)
-      case FreeVariable(name) => Value.vfree(name)
-      case BoundVariable(n) => env.lookup(n)
-      case App(function, argument) => vapp(eval(function, env), eval(argument, env))
+      case Term.Annotated(subterm, _) => eval(subterm, env)
+      case Term.FreeVariable(Global(name)) => env(name) getOrElse Value.freeVariable(Global(name))
+      case Term.FreeVariable(name) => Value.freeVariable(name)
+      case Term.BoundVariable(n) => env(n) getOrElse (throw new AssertionError(s"Could not find binding for variable $n"))
+      case Term.Application(function, argument) => apply(eval(function, env), eval(argument, env))
     }
 
-  private def eval(term: CheckableTerm, env: Environment): Value = term match {
-    case Inf(subterm) => eval(subterm, env)
-    case Lambda(body) => LambdaValue(argument => eval(body, env.extend(argument)))
-  }
+  private def eval(term: CheckableTerm, env: Environment): Value =
+    term match {
+      case Term.Inf(subterm) => eval(subterm, env)
+      case Term.Lambda(body) => Value.Lambda(argument => eval(body, env.extendWith(argument)))
+    }
 
-  private def vapp(function: Value, argument: Value): Value =
+  private def apply(function: Value, argument: Value): Value =
     function match {
-      case LambdaValue(function) => function(argument)
-      case NeutralValue(value) => NeutralValue(AppNeutral(value, argument))
+      case Value.Lambda(function) => function(argument)
+      case Value.Neutral(value) => Value.Neutral(Neutral.Application(value, argument))
     }
 
 }

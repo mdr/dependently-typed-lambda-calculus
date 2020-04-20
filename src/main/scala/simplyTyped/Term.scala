@@ -4,35 +4,42 @@ import scala.language.implicitConversions
 
 sealed trait InferrableTerm {
 
-  def apply(argument: CheckableTerm): InferrableTerm = App(this, argument)
+  def apply(argument: CheckableTerm): InferrableTerm = Term.Application(this, argument)
+
+  override def toString: String = PrettyPrinter.prettyPrint(this)
 
 }
 
-case class Ann(term: CheckableTerm, typ: Type) extends InferrableTerm
+object Term {
 
-case class BoundVariable(n: Int) extends InferrableTerm
+  case class Annotated(term: CheckableTerm, typ: Type) extends InferrableTerm
 
-object FreeVariable {
+  case class BoundVariable(n: Int) extends InferrableTerm
 
-  def apply(name: String): FreeVariable = FreeVariable(Name.Global(name))
+  object FreeVariable {
+
+    def apply(name: String): FreeVariable = FreeVariable(Name.Global(name))
+
+  }
+
+  case class FreeVariable(name: Name) extends InferrableTerm
+
+  case class Application(function: InferrableTerm, argument: CheckableTerm) extends InferrableTerm
+
+  case class Inf(term: InferrableTerm) extends CheckableTerm
+
+  case class Lambda(body: CheckableTerm) extends CheckableTerm
 
 }
-
-case class FreeVariable(name: Name) extends InferrableTerm
-
-case class App(function: InferrableTerm, argument: CheckableTerm) extends InferrableTerm
 
 object CheckableTerm {
 
-  implicit def inferrableToCheckable(term: InferrableTerm): CheckableTerm = Inf(term)
+  implicit def inferrableToCheckable(term: InferrableTerm): CheckableTerm = Term.Inf(term)
 
 }
 
 sealed trait CheckableTerm {
 
+  override def toString: String = PrettyPrinter.prettyPrint(this)
+
 }
-
-case class Inf(term: InferrableTerm) extends CheckableTerm
-
-case class Lambda(body: CheckableTerm) extends CheckableTerm
-

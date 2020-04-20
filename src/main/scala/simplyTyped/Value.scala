@@ -1,19 +1,27 @@
 package simplyTyped
 
-sealed trait Value
+sealed trait Value {
 
-object Value {
-
-  def vfree(name: Name): Value = NeutralValue(FreeNeutral(name))
+  override def toString: String = Quoter.quote(this).toString
 
 }
 
-case class LambdaValue(function: Value => Value) extends Value
+object Value {
 
-case class NeutralValue(value: Neutral) extends Value
+  case class Lambda(function: Value => Value) extends Value
+
+  case class Neutral(value: simplyTyped.Neutral) extends Value
+
+  def freeVariable(name: Name): Value = Neutral(simplyTyped.Neutral.FreeVariable(name))
+
+}
 
 sealed trait Neutral
 
-case class FreeNeutral(name: Name) extends Neutral
+object Neutral {
 
-case class AppNeutral(function: Neutral, value: Value) extends Neutral
+  case class FreeVariable(name: Name) extends Neutral
+
+  case class Application(function: Neutral, argument: Value) extends Neutral
+
+}

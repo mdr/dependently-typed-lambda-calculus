@@ -3,7 +3,7 @@ package simplyTyped
 import scala.language.implicitConversions
 
 object Examples extends scala.App {
-
+  import Term._
   val id: CheckableTerm = Lambda(Inf(BoundVariable(0)))
   val const: CheckableTerm = Lambda(Lambda(Inf(BoundVariable(1))))
 
@@ -11,9 +11,12 @@ object Examples extends scala.App {
 
   // (id : a -> a) y
   val term1: InferrableTerm = (id :: (FreeType("a") -> FreeType("a"))) (free("y"))
-
+  val term1Alt = Parser.parse("""((\x -> x) :: a -> a) y""")
+  println(PrettyPrinter.prettyPrint(term1))
   // (const :: (b -> b) -> a -> (b -> b)) id y
   val term2: InferrableTerm = (const :: (FreeType("b") -> FreeType("b")) -> (FreeType("a") -> (FreeType("b") -> FreeType("b")))) (id)(free("y"))
+  val term2Alt = Parser.parse("""((\x y -> x) :: (b -> b) -> a -> (b -> b)) (\x -> x) y""")
+  println(PrettyPrinter.prettyPrint(term2))
 
   val Γ1 = Context.empty
     .withGlobalKind("a", *)
@@ -48,7 +51,7 @@ object Examples extends scala.App {
       .withGlobalKind("String", *)
       .withGlobalType("n", FreeType("Int"))
     // n : String
-    val term = Ann(Inf(FreeVariable("n")), FreeType("String"))
+    val term = Annotated(Inf(FreeVariable("n")), FreeType("String"))
     println(TypeChecker.inferType(term, Γ))
   }
 
@@ -62,4 +65,12 @@ object Examples extends scala.App {
     val term = Lambda(BoundVariable(0)(FreeVariable("s"))) :: (FreeType("String") -> FreeType("Int")) -> FreeType("Int")
     println(TypeChecker.inferType(term, Γ))
   }
+
+  println("Parsing:")
+  println(Parser.parseAll(Parser.term, "f (x y) :: String -> Int -> Int"))
+  println(Parser.parseAll(Parser.term, """(\x -> f x) :: String -> Int"""))
+  println(Parser.parseAll(Parser.term, """(\x -> f x (\y -> x y z)) :: String -> Int"""))
+  println(Parser.parseAll(Parser.term, """(\x -> x) :: String -> Int"""))
+  println(Parser.parseAll(Parser.term, """(\x y z -> x y (\q -> x y)) :: String -> Int"""))
+
 }

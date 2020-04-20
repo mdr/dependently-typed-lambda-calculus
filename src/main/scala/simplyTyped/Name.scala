@@ -1,6 +1,8 @@
 package simplyTyped
 
-sealed trait Name
+sealed trait Name {
+  override def toString: String = PrettyPrinter.prettyPrint(this)
+}
 
 object Name {
 
