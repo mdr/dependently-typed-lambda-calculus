@@ -14,7 +14,7 @@ class EvaluatorSpec extends FlatSpec with Matchers {
   }
 
   "Typechecking an identity expression" should "work" in {
-    val term = Parser.parse("((λx -> x) :: a -> a) y")
+    val term = Parser.parseSafe("((λx -> x) :: a -> a) y")
     val Γ = Context.empty
       .withGlobalKind("a", *)
       .withGlobalType("y", FreeType("a"))

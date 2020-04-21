@@ -8,7 +8,15 @@ import scala.util.matching.Regex
 
 object Parser extends RegexParsers {
 
-  def parse(s: String): InferrableTerm = parseAll(term, s).getOrElse(throw new RuntimeException("Parse error"))
+  def parse(s: String): InferrableTerm = parseSafe(s) match {
+    case Left(error) => throw new RuntimeException(s"Parser error: $error")
+    case Right(term) => term
+  }
+
+  def parseSafe(s: String): Either[String, InferrableTerm] = parseAll(term, s) match {
+    case NoSuccess(message, _) => Left(message)
+    case Success(term, _) => Right(term)
+  }
 
   def parseType(s: String): Type = parseAll(typ, s).getOrElse(throw new RuntimeException("Parse error"))
 

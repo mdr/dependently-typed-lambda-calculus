@@ -2,7 +2,7 @@ package simplyTyped
 
 import scala.language.implicitConversions
 
-object Examples extends scala.App {
+object Examples {
   import Term._
   val id: CheckableTerm = Lambda(Inf(BoundVariable(0)))
   val const: CheckableTerm = Lambda(Lambda(Inf(BoundVariable(1))))
