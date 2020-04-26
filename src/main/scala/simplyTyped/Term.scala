@@ -8,13 +8,19 @@ sealed trait InferrableTerm {
 
   override def toString: String = PrettyPrinter.prettyPrint(this)
 
+  def freeVariables: Seq[Name]
+
 }
 
 object Term {
 
-  case class Annotated(term: CheckableTerm, typ: Type) extends InferrableTerm
+  case class Annotated(term: CheckableTerm, typ: Type) extends InferrableTerm {
+    override def freeVariables: Seq[Name] = term.freeVariables
+  }
 
-  case class BoundVariable(n: Int) extends InferrableTerm
+  case class BoundVariable(n: Int) extends InferrableTerm {
+    override def freeVariables: Seq[Name] = Seq.empty
+  }
 
   object FreeVariable {
 
@@ -22,13 +28,21 @@ object Term {
 
   }
 
-  case class FreeVariable(name: Name) extends InferrableTerm
+  case class FreeVariable(name: Name) extends InferrableTerm {
+    override def freeVariables: Seq[Name] = Seq(name)
+  }
 
-  case class Application(function: InferrableTerm, argument: CheckableTerm) extends InferrableTerm
+  case class Application(function: InferrableTerm, argument: CheckableTerm) extends InferrableTerm {
+    override def freeVariables: Seq[Name] = function.freeVariables ++ argument.freeVariables
+  }
 
-  case class Inf(term: InferrableTerm) extends CheckableTerm
+  case class Inf(term: InferrableTerm) extends CheckableTerm {
+    override def freeVariables: Seq[Name] = term.freeVariables
+  }
 
-  case class Lambda(body: CheckableTerm) extends CheckableTerm
+  case class Lambda(body: CheckableTerm) extends CheckableTerm {
+    override def freeVariables: Seq[Name] = body.freeVariables
+  }
 
 }
 
@@ -40,6 +54,8 @@ object CheckableTerm {
 
 sealed trait CheckableTerm {
 
-  override def toString: String = PrettyPrinter.prettyPrint(this)
+  override def toString: String = PrettyPrinter.prettyPrint(this, NameSupplier())
+
+  def freeVariables: Seq[Name]
 
 }

@@ -73,7 +73,7 @@ object Interpreter {
       Right(InterpreterResult.Evaluated(_, value, _)) = resultEither
     } yield Quoter.quote(value)
 
-  def interpret(s: String, state: InterpreterState): Either[String, InterpreterResult] = {
+  private def interpret(s: String, state: InterpreterState): Either[String, InterpreterResult] = {
     for {
       statement <- Parser.parseStatementSafe(s)
       result <- interpretStatement(statement, state)
@@ -84,8 +84,14 @@ object Interpreter {
     statement match {
       case Statement.Eval(term) => interpretExpression("it", term, state)
       case Statement.Let(name, term) => interpretExpression(name, term, state)
-      case Statement.Assume(name, info) => Right(InterpreterResult.Assume(name, info)) // TODO: check
+      case Statement.Assume(name, HasType(typ)) => interpretAssume(name, typ, state)
+      case Statement.Assume(name, info) => Right(InterpreterResult.Assume(name, info))
     }
+
+  private def interpretAssume(name: String, typ: Type, state: InterpreterState): Either[String, InterpreterResult] =
+    for {
+      _ <- TypeChecker.checkKind(typ, *, state.Γ)
+    } yield InterpreterResult.Assume(name, HasType(typ))
 
   private def interpretExpression(name: String, term: InferrableTerm, state: InterpreterState): Either[String, InterpreterResult] =
     for {
