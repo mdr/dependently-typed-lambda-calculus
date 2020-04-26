@@ -6,15 +6,15 @@ import org.scalatest.matchers.should.Matchers
 class EvaluatorSpec extends FlatSpec with Matchers {
 
   "Evaluating identity" should "work" in {
-    val term = Parser.parse("((λx -> x) :: a -> a) y")
+    val term = Parser.parseTerm("((λx -> x) :: a -> a) y")
 
     val result = Evaluator.eval(term)
 
-    Quoter.quote(result) shouldEqual Term.Inf(Parser.parse("y"))
+    Quoter.quote(result) shouldEqual Term.Inf(Parser.parseTerm("y"))
   }
 
   "Typechecking an identity expression" should "work" in {
-    val term = Parser.parseSafe("((λx -> x) :: a -> a) y")
+    val term = Parser.parseTerm("((λx -> x) :: a -> a) y")
     val Γ = Context.empty
       .withGlobalKind("a", *)
       .withGlobalType("y", FreeType("a"))
@@ -24,38 +24,31 @@ class EvaluatorSpec extends FlatSpec with Matchers {
     typ shouldEqual Parser.parseType("a")
   }
 
-  "Zero" should "work" in {
-    val zero = Parser.parse("(λf x -> f x) :: (a -> a) -> (a -> a)")
-    val one =  Parser.parse("(λf x -> f (f x)) :: (a -> a) -> (a -> a)")
-    val succ = Parser.parse("(λn f x -> f (n f x)) :: ((a -> a) -> (a -> a)) -> ((a -> a) -> (a -> a))")
-    val resultZero = Evaluator.eval(zero)
-    val resultOne = Evaluator.eval(one)
-    val resultSucc = Evaluator.eval(succ)
+  "Church numerals" should "work" in {
+    val session =
+      for {
+        _ <- Interpreter.interpret("assume a :: *")
+        _ <- Interpreter.interpret("let zero = (λf x -> x) :: (a -> a) -> (a -> a)")
+        _ <- Interpreter.interpret("let one = (λf x -> f x) :: (a -> a) -> (a -> a)")
+        _ <- Interpreter.interpret("let succ = (λn f x -> f (n f x)) :: ((a -> a) -> (a -> a)) -> ((a -> a) -> (a -> a))")
+        _ <- Interpreter.interpret("let two = succ one")
+        _ <- Interpreter.interpret("let three = succ two")
+        _ <- Interpreter.interpret("let four = succ three")
+        _ <- Interpreter.interpret("let five = succ four")
+        _ <- Interpreter.interpret("let six = succ five")
+        _ <- Interpreter.interpret("let add = (λm n f x -> m f (n f x)) :: ((a -> a) -> (a -> a)) -> ((a -> a) -> (a -> a)) -> ((a -> a) -> (a -> a))")
+        _ <- Interpreter.interpret("let mult = (λm n f x -> m (n f) x) :: ((a -> a) -> (a -> a)) -> ((a -> a) -> (a -> a)) -> ((a -> a) -> (a -> a))")
+        twoPlusFour <- Interpreter.eval("add two four")
+        threeTimesTwo <- Interpreter.eval("mult three two")
+      } yield twoPlusFour -> threeTimesTwo
 
-    val Γ = Context.empty
-      .withGlobalKind("a", *)
-    val Right(_) = TypeChecker.inferType(zero, Γ)
-    val Right(_) = TypeChecker.inferType(one, Γ)
-    val Right(_) = TypeChecker.inferType(succ, Γ)
+    val (twoPlusFour, threeTimesTwo) = session.run()
 
-    val succZero = Parser.parse("((λn f x -> f (n f x)) :: ((a -> a) -> (a -> a)) -> ((a -> a) -> (a -> a))) (λf x -> f x)")
-    val resultSuccZero = Evaluator.eval(succZero)
+    twoPlusFour shouldEqual threeTimesTwo
+  }
 
-    val succOne = Parser.parse("((λn f x -> f (n f x)) :: ((a -> a) -> (a -> a)) -> ((a -> a) -> (a -> a))) (λf x -> f (f x))")
-    val resultSuccOne = Evaluator.eval(succOne)
-
-    val env = Environment.empty
-      .extendWith("zero", resultZero)
-      .extendWith("one", resultOne)
-      .extendWith("succ", resultSucc)
-
-    val succOneAgain = Parser.parse("succ one")
-    val resultSuccOneAgain = Evaluator.eval(succOneAgain, env)
-
-    println(resultSuccZero)
-    println(resultSuccOne)
-    println(resultSuccOneAgain)
-    Quoter.quote(resultSuccZero) shouldEqual Quoter.quote(resultOne)
+  "Parsing exception bug" should "not happen" in {
+    val Left(_) = Parser.parseTermSafe("(λx -> f x) ::")
   }
 
 }

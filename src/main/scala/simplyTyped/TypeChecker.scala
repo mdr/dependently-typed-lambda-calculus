@@ -44,7 +44,7 @@ object TypeChecker {
               for {
                 _ <- checkType(argument, argumentType, Γ, bindersPassed)
               } yield resultType
-            case FreeType(_) => throwError("Illegal application")
+            case FreeType(_) => throwError(s"Value of type ${functionType} is not a valid function")
           }
         } yield resultType
       case BoundVariable(_) => throwError("Unexpected Bound term in type checking")

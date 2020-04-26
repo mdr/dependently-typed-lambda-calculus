@@ -8,21 +8,38 @@ import scala.util.matching.Regex
 
 object Parser extends RegexParsers {
 
-  def parse(s: String): InferrableTerm = parseSafe(s) match {
+  def parseStatementSafe(s: String): Either[String, Statement] = toEither(parseAll(statement, s))
+
+  def parseTermSafe(s: String): Either[String, InferrableTerm] = toEither(parseAll(term, s))
+
+  def parseTerm(s: String): InferrableTerm = parseTermSafe(s) match {
     case Left(error) => throw new RuntimeException(s"Parser error: $error")
     case Right(term) => term
   }
 
-  def parseSafe(s: String): Either[String, InferrableTerm] = parseAll(term, s) match {
-    case NoSuccess(message, _) => Left(message)
-    case Success(term, _) => Right(term)
-  }
-
   def parseType(s: String): Type = parseAll(typ, s).getOrElse(throw new RuntimeException("Parse error"))
+
+  private def toEither[T](parseResult: ParseResult[T]): Either[String, T] =
+    parseResult match {
+      case NoSuccess(message, _) => Left(message)
+      case Success(term, _) => Right(term)
+    }
 
   lazy val ident: Regex = "[a-zA-Z]+".r
 
   lazy val freeVariable: Parser[FreeVariable] = ident ^^ (name => FreeVariable(name))
+
+  lazy val statement: Parser[Statement] = letStatement | assumeStatement | term ^^ Statement.Eval
+
+  lazy val letStatement: Parser[Statement.Let] = ("let" ~> ident <~ "=") ~ term ^^ {
+    case name ~ expression => Statement.Let(name, expression)
+  }
+
+  lazy val assumeStatement: Parser[Statement.Assume] = ("assume" ~> ident <~ "::") ~ info ^^ {
+    case name ~ info => Statement.Assume(name, info)
+  }
+
+  lazy val info: Parser[Info] = "*" ^^^ HasKind(*) | typ ^^ HasType
 
   lazy val term: Parser[InferrableTerm] = maybeAnnotatedTerm
 
@@ -47,8 +64,6 @@ object Parser extends RegexParsers {
     case args ~ body => args.foldRight[CheckableTerm](Inf(body))((arg, body) => Lambda(body.substitute(arg, 0)))
   }
 
-  lazy val lambdaArgs: Parser[List[String]] = ???
-
   private implicit class RichInferrableTerm(term: InferrableTerm) {
 
     def substitute(name: String, i: Int): InferrableTerm = term match {
@@ -70,7 +85,7 @@ object Parser extends RegexParsers {
   }
 
   def typ: Parser[Type] =
-    repsep(simpleType, "->") ^^
+    rep1sep(simpleType, "->") ^^
       (_.reduceRight[Type] { case (functionType, argumentType) => FunctionType(functionType, argumentType) })
 
   def simpleType: Parser[Type] = freeType | "(" ~> typ <~ ")"

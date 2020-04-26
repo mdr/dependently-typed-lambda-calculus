@@ -7,15 +7,15 @@ object Examples {
   val id: CheckableTerm = Lambda(Inf(BoundVariable(0)))
   val const: CheckableTerm = Lambda(Lambda(Inf(BoundVariable(1))))
 
-  def free(name: String) = Inf(FreeVariable(name))
+  def free(name: String): Inf = Inf(FreeVariable(name))
 
   // (id : a -> a) y
   val term1: InferrableTerm = (id :: (FreeType("a") -> FreeType("a"))) (free("y"))
-  val term1Alt = Parser.parse("""((\x -> x) :: a -> a) y""")
+  val term1Alt = Parser.parseTerm("""((\x -> x) :: a -> a) y""")
   println(PrettyPrinter.prettyPrint(term1))
   // (const :: (b -> b) -> a -> (b -> b)) id y
   val term2: InferrableTerm = (const :: (FreeType("b") -> FreeType("b")) -> (FreeType("a") -> (FreeType("b") -> FreeType("b")))) (id)(free("y"))
-  val term2Alt = Parser.parse("""((\x y -> x) :: (b -> b) -> a -> (b -> b)) (\x -> x) y""")
+  val term2Alt = Parser.parseTerm("""((\x y -> x) :: (b -> b) -> a -> (b -> b)) (\x -> x) y""")
   println(PrettyPrinter.prettyPrint(term2))
 
   val Γ1 = Context.empty
@@ -65,12 +65,5 @@ object Examples {
     val term = Lambda(BoundVariable(0)(FreeVariable("s"))) :: (FreeType("String") -> FreeType("Int")) -> FreeType("Int")
     println(TypeChecker.inferType(term, Γ))
   }
-
-  println("Parsing:")
-  println(Parser.parseAll(Parser.term, "f (x y) :: String -> Int -> Int"))
-  println(Parser.parseAll(Parser.term, """(\x -> f x) :: String -> Int"""))
-  println(Parser.parseAll(Parser.term, """(\x -> f x (\y -> x y z)) :: String -> Int"""))
-  println(Parser.parseAll(Parser.term, """(\x -> x) :: String -> Int"""))
-  println(Parser.parseAll(Parser.term, """(\x y z -> x y (\q -> x y)) :: String -> Int"""))
 
 }
