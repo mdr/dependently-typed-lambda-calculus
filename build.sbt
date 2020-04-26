@@ -1,4 +1,4 @@
-import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
+import sbtcrossproject.CrossPlugin.autoImport.crossProject
 
 ThisBuild / scalaVersion := "2.13.1"
 
@@ -26,20 +26,3 @@ lazy val foo = crossProject(JSPlatform, JVMPlatform).in(file(".")).
     mainClass in Compile := Some("simplyTyped.Main"),
     libraryDependencies += "com.github.japgolly.scalajs-react" %%% "core" % "1.6.0"
   )
-
-//
-//libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2"
-//libraryDependencies += "org.scalatest" %% "scalatest" % "3.1.1" % "test"
-
-//libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "1.0.0"
-//libraryDependencies += "com.github.japgolly.scalajs-react" %%% "core" % "1.6.0"
-//libraryDependencies += "org.scala-lang.modules" %%% "scala-parser-combinators" % "1.1.2"
-//libraryDependencies += "org.scalatest" %%% "scalatest" % "3.1.1" % "test"
-
-//enablePlugins(ScalaJSPlugin)
-//enablePlugins(ScalaJSBundlerPlugin)
-
-
-
-//scalaJSUseMainModuleInitializer := true
-//mainClass in Compile := Some("simplyTyped.Main")

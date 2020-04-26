@@ -3,7 +3,7 @@ package simplyTyped
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 
-class EvaluatorSpec extends FlatSpec with Matchers {
+class InterpreterSpec extends FlatSpec with Matchers {
 
   "Evaluating identity" should "work" in {
     val term = Parser.parseTerm("((λx -> x) :: a -> a) y")
