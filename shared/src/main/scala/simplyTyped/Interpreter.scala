@@ -29,6 +29,7 @@ object InterpreterState {
 sealed trait InterpreterResult
 
 object InterpreterResult {
+  type InterpreterOutcome = Either[String, InterpreterResult]
 
   case class Evaluated(name: String, value: Value, typ: Type) extends InterpreterResult
 
