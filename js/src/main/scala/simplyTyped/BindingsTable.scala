@@ -8,17 +8,19 @@ object BindingsTable {
   val bindingsTable =
     ScalaComponent.builder[InterpreterState]("BindingsTable")
       .render_P(interpreterState => {
-        val rows = interpreterState.Γ.infoByName.toSeq.sortBy(_._1.toString).collect { case (Name.Global(name), info) =>
-          <.tr(
-            <.td(name),
-            <.td(interpreterState.letBindings.getOrElse(name, "").toString),
-            <.td(info match {
-              case HasKind(*) => "*"
-              case HasType(typ) => typ.toString
-            })
-          )
-        }
-        <.table(^.`class` := "table",
+        val rows = interpreterState.Γ.infoByName.toSeq
+          .sortBy { case (name, y) => interpreterState.letBindings.getOrElse(name.toString, "").toString.length + y.toString.length }
+          .collect { case (Name.Global(name), info) =>
+            <.tr(
+              <.td(<.code(name)),
+              <.td(<.code(interpreterState.letBindings.getOrElse(name, "").toString)),
+              <.td(<.code(info match {
+                case HasKind(_) => "*"
+                case HasType(typ) => typ.toString
+              }))
+            )
+          }
+        <.table(^.`class` := "table table-bordered",
           <.thead(
             <.tr(
               <.th(^.scope := "col", "Name"),

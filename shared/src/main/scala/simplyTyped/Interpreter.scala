@@ -39,6 +39,8 @@ object InterpreterResult {
 
 
 case class InterpreterState(letBindings: Map[String, Value] = Map.empty, assumptions: Map[String, Info] = Map.empty) {
+  def merge(that: InterpreterState) = copy(letBindings = this.letBindings ++ that.letBindings, assumptions = this.assumptions ++ that.assumptions)
+
   val Γ: Context = assumptions.foldLeft(Context.empty) { case (context, (name, info)) => context.withGlobal(name, info) }
 
   val environment: Environment =
