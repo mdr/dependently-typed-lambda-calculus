@@ -3,10 +3,15 @@ package dependentlyTyped
 import dependentlyTyped.Term._
 
 import scala.language.postfixOps
-import scala.util.matching.Regex
 import scala.util.parsing.combinator._
 
 object Parser extends RegexParsers {
+
+  def ident: Parser[String] = (
+    "" ~> // handle whitespace
+      rep1(acceptIf(Character.isJavaIdentifierStart)("identifier expected but '" + _ + "' found"),
+        elem("identifier part", c => Character.isJavaIdentifierPart(c) || c == '\'')) ^^ (_.mkString)
+    )
 
   def parseStatementSafe(s: String): Either[String, Statement] = toEither(parseAll(statement, s))
 
@@ -22,8 +27,6 @@ object Parser extends RegexParsers {
       case NoSuccess(message, _) => Left(message)
       case Success(term, _) => Right(term)
     }
-
-  lazy val ident: Regex = "[a-zA-Z]+".r
 
   lazy val freeVariable: Parser[FreeVariable] = ident ^^ (name => FreeVariable(name))
 
@@ -53,7 +56,7 @@ object Parser extends RegexParsers {
 
   lazy val parenLambda: Parser[CheckableTerm] = "(" ~> lambdaTerm <~ ")"
 
-  lazy val maybeFunctionType: Parser[InferrableTerm] = maybeApplicationTerm ~ opt("->" ~> maybeFunctionType) ^^ {
+  lazy val maybeFunctionType: Parser[InferrableTerm] = maybeApplicationTerm ~ opt("->" ~> (piTerm | maybeFunctionType)) ^^ {
     case argumentType ~ Some(resultType) => Pi(argumentType, resultType)
     case term ~ None => term
   }
@@ -67,7 +70,7 @@ object Parser extends RegexParsers {
 
   lazy val simpleTerm: Parser[InferrableTerm] = "*" ^^^ * | freeVariable | "(" ~> term <~ ")"
 
-  lazy val lambdaTerm: Parser[CheckableTerm] = (("\\" | "λ") ~> rep1(ident) <~ "->") ~ (lambdaTerm | maybeApplicationTerm ^^ Inf) ^^ {
+  lazy val lambdaTerm: Parser[CheckableTerm] = (("\\" | "λ") ~> rep1(ident) <~ "->") ~ (lambdaTerm | maybeFunctionType ^^ Inf) ^^ {
     case args ~ body => args.foldRight[CheckableTerm](body)((arg, body) => Lambda(body.substitute(arg, 0)))
   }
 
