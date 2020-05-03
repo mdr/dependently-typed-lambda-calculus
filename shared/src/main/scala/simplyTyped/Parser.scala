@@ -4,9 +4,8 @@ import scala.util.parsing.combinator._
 import Term._
 
 import scala.language.postfixOps
-import scala.util.matching.Regex
 
-object Parser extends RegexParsers {
+object Parser extends JavaTokenParsers {
 
   def parseStatementSafe(s: String): Either[String, Statement] = toEither(parseAll(statement, s))
 
@@ -25,11 +24,11 @@ object Parser extends RegexParsers {
       case Success(term, _) => Right(term)
     }
 
-  lazy val ident: Regex = "[a-zA-Z]+".r
-
   lazy val freeVariable: Parser[FreeVariable] = ident ^^ (name => FreeVariable(name))
 
-  lazy val statement: Parser[Statement] = letStatement | assumeStatement | term ^^ Statement.Eval
+  lazy val statement: Parser[Statement] = letStatement | assumeStatement | evalStatement
+
+  lazy val evalStatement: simplyTyped.Parser.Parser[Statement.Eval] = term ^^ Statement.Eval
 
   lazy val letStatement: Parser[Statement.Let] = ("let" ~> ident <~ "=") ~ term ^^ {
     case name ~ expression => Statement.Let(name, expression)
@@ -44,24 +43,26 @@ object Parser extends RegexParsers {
   lazy val term: Parser[InferrableTerm] = maybeAnnotatedTerm
 
   lazy val maybeAnnotatedTerm: Parser[InferrableTerm] =
-    (maybeApplication ~ opt("::" ~> typ) ^^ {
+    annotatedLambda | maybeApplicationTerm ~ opt("::" ~> typ) ^^ {
       case term ~ Some(typ) => Annotated(term, typ)
       case term ~ None => term
-    }) | (lambdaTerm ~ ("::" ~> typ) ^^ {
-      case term ~ typ => Annotated(term, typ)
-    })
+    }
 
-  lazy val maybeApplication: Parser[InferrableTerm] = simpleTerm ~ rep(applicationArg) ^^ {
+  lazy val annotatedLambda: Parser[InferrableTerm] = parenLambda ~ ("::" ~> typ) ^^ { case term ~ typ => Annotated(term, typ) }
+
+  lazy val parenLambda: Parser[CheckableTerm] = "(" ~> lambdaTerm <~ ")"
+
+  lazy val maybeApplicationTerm: Parser[InferrableTerm] = simpleTerm ~ rep(argument) ^^ {
     case term ~ Nil => term
     case function ~ arguments => arguments.foldLeft(function)((curriedFunction, arg) => Application(curriedFunction, arg))
   }
 
-  lazy val applicationArg: Parser[CheckableTerm] = lambdaTerm | (simpleTerm ^^ Inf)
+  lazy val argument: Parser[CheckableTerm] = parenLambda | simpleTerm ^^ Inf
 
   lazy val simpleTerm: Parser[InferrableTerm] = freeVariable | "(" ~> term <~ ")"
 
-  lazy val lambdaTerm: Parser[CheckableTerm] = ("(" ~> (("\\" | "λ") ~> rep1(ident) <~ "->") ~ maybeApplication) <~ ")" ^^ {
-    case args ~ body => args.foldRight[CheckableTerm](Inf(body))((arg, body) => Lambda(body.substitute(arg, 0)))
+  lazy val lambdaTerm: Parser[CheckableTerm] = (("\\" | "λ") ~> rep1(ident) <~ "->") ~ (lambdaTerm | maybeApplicationTerm ^^ Inf) ^^ {
+    case args ~ body => args.foldRight[CheckableTerm](body)((arg, body) => Lambda(body.substitute(arg, 0)))
   }
 
   private implicit class RichInferrableTerm(term: InferrableTerm) {

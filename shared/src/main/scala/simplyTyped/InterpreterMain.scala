@@ -3,7 +3,7 @@ import scala.io.StdIn.readLine
 
 object InterpreterMain extends App {
 
-  var interpreterState = Examples.churchNumeralsInterpreterState
+  var interpreterState =Examples.churchNumeralsInterpreterState
 
   while (true) {
     val line = readLine("λ> ")
