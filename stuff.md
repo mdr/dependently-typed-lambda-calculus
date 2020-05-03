@@ -7,4 +7,5 @@ Type mismatch. Expected type '(forall (a :: Local-0) . Local-0)', but was inferr
 * Web FE
   * Split between simple / dependently typed tabs
 * Pretty printer for `->`
+ * Pretty printer for multiple forall
 * Assume statement syntax

@@ -67,7 +67,7 @@ object Parser extends RegexParsers {
 
   lazy val simpleTerm: Parser[InferrableTerm] = freeVariable | "(" ~> term <~ ")"
 
-  lazy val lambdaTerm: Parser[CheckableTerm] = (("\\" | "λ") ~> rep1(ident) <~ "->") ~ (lambdaTerm | maybeApplicationTerm ^^ Inf) ^^ {
+  lazy val lambdaTerm: Parser[CheckableTerm] = (("\\" | "λ") ~> rep1(ident) <~ arrow) ~ (lambdaTerm | maybeApplicationTerm ^^ Inf) ^^ {
     case args ~ body => args.foldRight[CheckableTerm](body)((arg, body) => Lambda(body.substitute(arg, 0)))
   }
 
@@ -92,8 +92,10 @@ object Parser extends RegexParsers {
   }
 
   def typ: Parser[Type] =
-    rep1sep(simpleType, "->") ^^
+    rep1sep(simpleType, arrow) ^^
       (_.reduceRight[Type] { case (functionType, argumentType) => FunctionType(functionType, argumentType) })
+
+  lazy val arrow = "->" | "→"
 
   def simpleType: Parser[Type] = freeType | "(" ~> typ <~ ")"
 

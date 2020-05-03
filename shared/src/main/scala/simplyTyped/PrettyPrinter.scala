@@ -50,7 +50,7 @@ object PrettyPrinter {
         val newBody = names.reverse.zipWithIndex.foldRight(ultimateBody) {
           case ((name, index), body) => body.substitute(index, Term.FreeVariable(Name.Global(name)))
         }
-        s"(λ${names.mkString(" ")} -> ${prettyPrint(newBody, newNameSupplier)})"
+        s"(λ${names.mkString(" ")} → ${prettyPrint(newBody, newNameSupplier)})"
     }
 
   def prettyPrint(typ: Type): String =
@@ -58,7 +58,7 @@ object PrettyPrinter {
       case FreeType(name) => prettyPrint(name)
       case FunctionType(argumentType, resultType) =>
         val parensForArgType = cond(argumentType) { case FunctionType(_, _) => true }
-        s"${maybeParens(parensForArgType, prettyPrint(argumentType))} -> ${prettyPrint(resultType)}"
+        s"${maybeParens(parensForArgType, prettyPrint(argumentType))} → ${prettyPrint(resultType)}"
     }
 
   private def maybeParens(parens: Boolean, s: String): String = if (parens) s"($s)" else s

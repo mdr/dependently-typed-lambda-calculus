@@ -18,7 +18,7 @@ object PrettyPrinter {
         val freeNames = resultType.freeVariables.collect { case Name.Global(name) => name }
         val (name, newNameSupplier) = nameSupplier.getName(avoid = freeNames)
         val replacedResultType = resultType.substitute(0, Term.FreeVariable(Name.Global(name)))
-        s"(forall ($name :: ${prettyPrint(argumentType, nameSupplier)}) . ${prettyPrint(replacedResultType, newNameSupplier)})"
+        s"(∀ ($name :: ${prettyPrint(argumentType, nameSupplier)}) . ${prettyPrint(replacedResultType, newNameSupplier)})"
     }
 
   def prettyPrint(name: Name): String = {
