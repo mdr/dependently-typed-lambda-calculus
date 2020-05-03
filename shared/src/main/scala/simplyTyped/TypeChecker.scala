@@ -1,8 +1,10 @@
 package simplyTyped
 
 import scala.annotation.tailrec
+import simplyTyped.Substitutions._
 
 object TypeChecker {
+
   import Term._
 
   type Result[A] = Either[String, A]
@@ -50,25 +52,6 @@ object TypeChecker {
       case BoundVariable(_) => throwError("Unexpected Bound term in type checking")
     }
 
-
-  implicit class RichInferrableTerm(term: InferrableTerm) {
-
-    def substitute(i: Int, replacement: InferrableTerm): InferrableTerm = term match {
-      case Annotated(term, typ) => Annotated(term.substitute(i, replacement), typ)
-      case BoundVariable(j) => if (i == j) replacement else BoundVariable(j)
-      case FreeVariable(name) => FreeVariable(name)
-      case Application(function, argument) => Application(function.substitute(i, replacement), argument.substitute(i, replacement))
-    }
-  }
-
-  implicit class RichCheckableTerm(term: CheckableTerm) {
-
-    def substitute(i: Int, replacement: InferrableTerm): CheckableTerm = term match {
-      case Inf(term) => Inf(term.substitute(i, replacement))
-      case Lambda(body) => Lambda(body.substitute(i + 1, replacement))
-    }
-
-  }
 
   @tailrec
   def checkType(term: CheckableTerm, expectedType: Type, Γ: Context, bindersPassed: Int): Result[Unit] =

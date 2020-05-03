@@ -1,4 +1,4 @@
-package simplyTyped
+package dependentlyTyped
 
 import scala.PartialFunction.cond
 import Substitutions._
@@ -7,12 +7,15 @@ object PrettyPrinter {
 
   def prettyPrint(term: InferrableTerm, nameSupplier: NameSupplier = NameSupplier()): String =
     term match {
-      case Term.Annotated(term, typ) => s"((${prettyPrint(term, nameSupplier)}) :: ${prettyPrint(typ)})"
+      case Term.Annotated(term, typ) => s"((${prettyPrint(term, nameSupplier)}) :: ${prettyPrint(typ, nameSupplier)})"
       case Term.BoundVariable(n) => n.toString
       case Term.FreeVariable(name) => prettyPrint(name)
       case Term.Application(function, argument) =>
         val parensForArg = cond(argument) { case Term.Inf(Term.Application(_, _)) => true }
         s"${prettyPrint(function, nameSupplier)} ${maybeParens(parensForArg, prettyPrint(argument, nameSupplier))}"
+      case Term.* => "*"
+      case Term.Pi(argumentType, resultType) =>
+        s"(forall (${prettyPrint(argumentType, nameSupplier)}) ${prettyPrint(resultType, nameSupplier)})"
     }
 
   def prettyPrint(name: Name): String = {
@@ -51,14 +54,6 @@ object PrettyPrinter {
           case ((name, index), body) => body.substitute(index, Term.FreeVariable(Name.Global(name)))
         }
         s"(λ${names.mkString(" ")} -> ${prettyPrint(newBody, newNameSupplier)})"
-    }
-
-  def prettyPrint(typ: Type): String =
-    typ match {
-      case FreeType(name) => prettyPrint(name)
-      case FunctionType(argumentType, resultType) =>
-        val parensForArgType = cond(argumentType) { case FunctionType(_, _) => true }
-        s"${maybeParens(parensForArgType, prettyPrint(argumentType))} -> ${prettyPrint(resultType)}"
     }
 
   private def maybeParens(parens: Boolean, s: String): String = if (parens) s"($s)" else s
