@@ -28,7 +28,7 @@ object Parser extends JavaTokenParsers {
 
   lazy val statement: Parser[Statement] = letStatement | assumeStatement | evalStatement
 
-  lazy val evalStatement: simplyTyped.Parser.Parser[Statement.Eval] = term ^^ Statement.Eval
+  lazy val evalStatement: Parser[Statement.Eval] = term ^^ Statement.Eval
 
   lazy val letStatement: Parser[Statement.Let] = ("let" ~> ident <~ "=") ~ term ^^ {
     case name ~ expression => Statement.Let(name, expression)

@@ -1,4 +1,4 @@
-package simplyTyped
+package dependentlyTyped
 
 case class InterpreterMonad[A](f: InterpreterState => (InterpreterState, A)) {
 
@@ -33,12 +33,12 @@ object InterpreterResult {
 
   case class Evaluated(name: String, value: Value, typ: Type) extends InterpreterResult
 
-  case class Assume(name: String, info: Info) extends InterpreterResult
+  case class Assume(name: String, typ: Type) extends InterpreterResult
 
 }
 
 
-case class InterpreterState(letBindings: Map[String, Value] = Map.empty, assumptions: Map[String, Info] = Map.empty) {
+case class InterpreterState(letBindings: Map[String, Value] = Map.empty, assumptions: Map[String, Type] = Map.empty) {
   def merge(that: InterpreterState): InterpreterState = copy(letBindings = this.letBindings ++ that.letBindings, assumptions = this.assumptions ++ that.assumptions)
 
   val Γ: Context = assumptions.foldLeft(Context.empty) { case (context, (name, info)) => context.withGlobal(name, info) }
@@ -47,13 +47,9 @@ case class InterpreterState(letBindings: Map[String, Value] = Map.empty, assumpt
     letBindings.foldLeft(Environment.empty) { case (env, (name, value)) => env.extendWith(name, value) }
 
   def bind(name: String, value: Value, typ: Type): InterpreterState =
-    copy(letBindings = letBindings + (name -> value), assumptions = assumptions + (name -> HasType(typ)))
+    copy(letBindings = letBindings + (name -> value), assumptions = assumptions + (name -> typ))
 
-  def assume(name: String, info: Info): InterpreterState = copy(assumptions = assumptions + (name -> info))
-
-  def assume(name: String, kind: Kind): InterpreterState = assume(name, HasKind(kind))
-
-  def assume(name: String, typ: Type): InterpreterState = assume(name, HasType(typ))
+  def assume(name: String, typ: Type): InterpreterState = copy(assumptions = assumptions + (name -> typ))
 
 }
 
@@ -87,14 +83,13 @@ object Interpreter {
     statement match {
       case Statement.Eval(term) => interpretExpression("it", term, state)
       case Statement.Let(name, term) => interpretExpression(name, term, state)
-      case Statement.Assume(name, HasType(typ)) => interpretAssume(name, typ, state)
-      case Statement.Assume(name, info) => Right(InterpreterResult.Assume(name, info))
+      case Statement.Assume(name, typ) => interpretAssume(name, typ, state)
     }
 
-  private def interpretAssume(name: String, typ: Type, state: InterpreterState): Either[String, InterpreterResult] =
+  private def interpretAssume(name: String, typ: InferrableTerm, state: InterpreterState): Either[String, InterpreterResult] =
     for {
-      _ <- TypeChecker.checkKind(typ, *, state.Γ)
-    } yield InterpreterResult.Assume(name, HasType(typ))
+      _ <- TypeChecker.checkType(Term.Inf(typ), Value.*, state.Γ, 0)
+    } yield InterpreterResult.Assume(name, Evaluator.eval(typ, state.environment))
 
   private def interpretExpression(name: String, term: InferrableTerm, state: InterpreterState): Either[String, InterpreterResult] =
     for {

@@ -11,21 +11,6 @@ object TypeChecker {
 
   private def throwError(error: String) = Left(error)
 
-  // TODO
-  //  def checkKind(typ: Type, kind: Kind, Γ: Context): Result[Unit] =
-  //    typ match {
-  //      case FreeType(name) => Γ(name) match {
-  //        case Some(HasKind(_)) => Right(())
-  //        case Some(HasType(_)) => throwError(s"type $name has type instead of kind")
-  //        case None => throwError(s"unknown identifier $name")
-  //      }
-  //      case FunctionType(functionType, argumentType) =>
-  //        for {
-  //          _ <- checkKind(functionType, *, Γ)
-  //          _ <- checkKind(argumentType, *, Γ)
-  //        } yield ()
-  //    }
-
   def inferType(term: InferrableTerm, Γ: Context, bindersPassed: Int = 0): Result[Type] =
     term match {
       case Annotated(term, typ) =>
@@ -47,7 +32,7 @@ object TypeChecker {
               for {
                 _ <- checkType(argument, argumentType, Γ, bindersPassed)
               } yield dependentResultType(Evaluator.eval(argument, Environment.empty))
-            case _ => throwError(s"Value of type ${functionType} is not a valid function")
+            case _ => throwError(s"Value of type $functionType is not a valid function")
           }
         } yield resultType
       case BoundVariable(_) => throwError("Unexpected Bound term in type checking")

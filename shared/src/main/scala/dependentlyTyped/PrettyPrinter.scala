@@ -15,7 +15,10 @@ object PrettyPrinter {
         s"${prettyPrint(function, nameSupplier)} ${maybeParens(parensForArg, prettyPrint(argument, nameSupplier))}"
       case Term.* => "*"
       case Term.Pi(argumentType, resultType) =>
-        s"(forall (${prettyPrint(argumentType, nameSupplier)}) ${prettyPrint(resultType, nameSupplier)})"
+        val freeNames = resultType.freeVariables.collect { case Name.Global(name) => name }
+        val (name, newNameSupplier) = nameSupplier.getName(avoid = freeNames)
+        val replacedResultType = resultType.substitute(0, Term.FreeVariable(Name.Global(name)))
+        s"(forall ($name :: ${prettyPrint(argumentType, nameSupplier)}) . ${prettyPrint(replacedResultType, newNameSupplier)})"
     }
 
   def prettyPrint(name: Name): String = {
