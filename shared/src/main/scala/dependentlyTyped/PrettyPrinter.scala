@@ -3,6 +3,8 @@ package dependentlyTyped
 import scala.PartialFunction.cond
 import Substitutions._
 
+import scala.annotation.tailrec
+
 object PrettyPrinter {
 
   def prettyPrint(term: InferrableTerm, nameSupplier: NameSupplier = NameSupplier()): String =
@@ -14,17 +16,47 @@ object PrettyPrinter {
         val parensForArg = cond(argument) { case Term.Inf(Term.Application(_, _)) => true }
         s"${prettyPrint(function, nameSupplier)} ${maybeParens(parensForArg, prettyPrint(argument, nameSupplier))}"
       case Term.* => "*"
-      case Term.Pi(_, resultType) =>
-        val (argumentTypes, ultimateResultType) = getPis(term)
-        val freeNames = resultType.freeVariables.collect { case Name.Global(name) => name }
-        val (names, newNameSupplier) = nameSupplier.getNames(argumentTypes.size, avoid = freeNames)
-        val newUltimateResultType = names.reverse.zipWithIndex.foldRight(ultimateResultType) {
-          case ((name, index), body) => body.substitute(index, Term.FreeVariable(Name.Global(name)))
+      case Term.Pi(argumentType, resultType) =>
+        if (!containsBoundVariable(resultType, 0)) {
+          val parensForArgType = cond(argumentType) {
+            case Term.Inf(Term.Annotated(_, _)) => true
+            case Term.Inf(Term.Pi(_, _)) => true
+            case Term.Lambda(_) => true
+          }
+          val parensForResultType = cond(resultType) {
+            case Term.Inf(Term.Annotated(_, _)) => true
+            case Term.Lambda(_) => true
+          }
+          s"${maybeParens(parensForArgType, prettyPrint(argumentType, nameSupplier))} -> ${maybeParens(parensForResultType, prettyPrint(resultType, nameSupplier))}"
+        } else {
+          val (argumentTypes, ultimateResultType) = getPis(term)
+          val freeNames = resultType.freeVariables.collect { case Name.Global(name) => name }
+          val (names, newNameSupplier) = nameSupplier.getNames(argumentTypes.size, avoid = freeNames)
+          val newUltimateResultType = names.reverse.zipWithIndex.foldRight(ultimateResultType) {
+            case ((name, index), body) => body.substitute(index, Term.FreeVariable(Name.Global(name)))
+          }
+          val prettyPrintedArgs = names.zip(argumentTypes).map {
+            case (name, argumentType) => s"($name :: ${prettyPrint(argumentType, newNameSupplier)})"
+          }.mkString(" ")
+          s"∀ $prettyPrintedArgs . ${prettyPrint(newUltimateResultType, newNameSupplier)}"
         }
-        val prettyPrintedArgs = names.zip(argumentTypes).map {
-          case (name, argumentType) => s"($name :: ${prettyPrint(argumentType, newNameSupplier)})"
-        }.mkString(" ")
-        s"(∀ $prettyPrintedArgs . ${prettyPrint(newUltimateResultType, newNameSupplier)})"
+    }
+
+  @tailrec
+  private def containsBoundVariable(term: CheckableTerm, n: Int): Boolean =
+    term match {
+      case Term.Inf(term) => containsBoundVariable(term, n)
+      case Term.Lambda(body) => containsBoundVariable(body, n + 1)
+    }
+
+  private def containsBoundVariable(term: InferrableTerm, n: Int): Boolean =
+    term match {
+      case Term.Annotated(term, typ) => containsBoundVariable(term, n) || containsBoundVariable(typ, n)
+      case Term.* => false
+      case Term.Pi(argumentType, resultType) => containsBoundVariable(argumentType, n) || containsBoundVariable(resultType, n + 1)
+      case Term.BoundVariable(m) => n == m
+      case Term.FreeVariable(_) => false
+      case Term.Application(function, argument) => containsBoundVariable(function, n) || containsBoundVariable(argument, n)
     }
 
   private def getPis(term: CheckableTerm): (Seq[CheckableTerm], CheckableTerm) =
@@ -35,7 +67,7 @@ object PrettyPrinter {
 
   private def getPis(term: InferrableTerm): (Seq[CheckableTerm], CheckableTerm) =
     term match {
-      case Term.Pi(argumentType, resultType) =>
+      case Term.Pi(argumentType, resultType) if containsBoundVariable(resultType, 0) =>
         val (argumentTypes, ultimateResultType) = getPis(resultType)
         (argumentType +: argumentTypes) -> ultimateResultType
       case _ => Seq.empty -> term

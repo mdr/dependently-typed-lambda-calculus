@@ -54,7 +54,7 @@ object Parser extends RegexParsers {
 
   lazy val parenLambda: Parser[CheckableTerm] = "(" ~> lambdaTerm <~ ")"
 
-  lazy val arrow = "->" | "→"
+  lazy val arrow: Parser[String] = "->" | "→"
 
   lazy val maybeFunctionType: Parser[InferrableTerm] = maybeApplicationTerm ~ opt(arrow ~> (piTerm | maybeFunctionType)) ^^ {
     case argumentType ~ Some(resultType) => Pi(argumentType, resultType)
