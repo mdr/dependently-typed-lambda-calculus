@@ -8,7 +8,6 @@ sealed trait InferrableTerm {
 
   override def toString: String = PrettyPrinter.prettyPrint(this)
 
-  // TODO: verify this makes snse
   def freeVariables: Seq[Name]
 
 }

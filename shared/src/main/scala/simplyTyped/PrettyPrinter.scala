@@ -15,13 +15,12 @@ object PrettyPrinter {
         s"${prettyPrint(function, nameSupplier)} ${maybeParens(parensForArg, prettyPrint(argument, nameSupplier))}"
     }
 
-  def prettyPrint(name: Name): String = {
+  def prettyPrint(name: Name): String =
     name match {
       case Name.Global(name) => name
       case Name.Local(n) => s"Local-$n"
       case Name.Quote(n) => s"Quote-$n"
     }
-  }
 
   private def getLambdas(term: CheckableTerm): (Int, CheckableTerm) =
     term match {
@@ -37,16 +36,7 @@ object PrettyPrinter {
       case Term.Lambda(_) =>
         val (numberOfLambdas, ultimateBody) = getLambdas(term)
         val freeNames = ultimateBody.freeVariables.collect { case Name.Global(name) => name }
-
-        def getNames(n: Int, nameSupplier: NameSupplier = NameSupplier()): (Seq[String], NameSupplier) =
-          if (n == 0) (Seq.empty, nameSupplier)
-          else {
-            val (names, nameSupplier2) = getNames(n - 1, nameSupplier)
-            val (name, nameSupplier3) = nameSupplier2.getName(avoid = freeNames)
-            (name +: names, nameSupplier3)
-          }
-
-        val (names, newNameSupplier) = getNames(numberOfLambdas, nameSupplier)
+        val (names, newNameSupplier) = nameSupplier.getNames(numberOfLambdas, avoid = freeNames)
         val newBody = names.reverse.zipWithIndex.foldRight(ultimateBody) {
           case ((name, index), body) => body.substitute(index, Term.FreeVariable(Name.Global(name)))
         }
@@ -63,11 +53,4 @@ object PrettyPrinter {
 
   private def maybeParens(parens: Boolean, s: String): String = if (parens) s"($s)" else s
 
-}
-
-case class NameSupplier(names: Seq[String] = "abcdefghijklmnopqrstuvwxyz".split("")) {
-  def getName(avoid: Seq[String]): (String, NameSupplier) = {
-    val availableNames = names.filterNot(avoid.contains)
-    availableNames.head -> NameSupplier(availableNames.tail)
-  }
 }
