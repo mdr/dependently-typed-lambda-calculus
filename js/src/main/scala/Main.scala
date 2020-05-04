@@ -1,5 +1,3 @@
-package simplyTyped
-
 import org.scalajs.dom.document
 
 object Main {
@@ -10,4 +8,3 @@ object Main {
   }
 
 }
-

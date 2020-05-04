@@ -23,6 +23,7 @@ lazy val foo = crossProject(JSPlatform, JVMPlatform).in(file(".")).
       "react" -> "16.7.0",
       "react-dom" -> "16.7.0"),
     scalaJSUseMainModuleInitializer := true,
-    mainClass in Compile := Some("simplyTyped.Main"),
-    libraryDependencies += "com.github.japgolly.scalajs-react" %%% "core" % "1.6.0"
+    mainClass in Compile := Some("Main"),
+    libraryDependencies += "com.github.japgolly.scalajs-react" %%% "core" % "1.6.0",
+    libraryDependencies += "com.github.japgolly.scalajs-react" %%% "extra" % "1.6.0"
   )

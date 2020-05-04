@@ -1,22 +1,21 @@
 package simplyTyped
 
-import japgolly.scalajs.react.{CtorType, _}
-import japgolly.scalajs.react.component.Scala.Component
+import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 
-object App {
+object SimplyTypedTab {
 
-  private case class State(input: String = "",
+  case class State(input: String = "",
                            interpreterState: InterpreterState = InterpreterState.initial,
                            history: Seq[HistoryEntry] = Seq.empty)
 
-  val app: Component[Unit, _, _, CtorType.Nullary] =
+  val simplyTypedTab =
     ScalaComponent.builder[Unit]("App")
       .initialState(State())
       .renderBackend[Backend]
       .build
 
-  private class Backend($: BackendScope[Unit, State]) {
+  class Backend($: BackendScope[Unit, State]) {
 
     val dataToggle = VdomAttr("data-toggle")
     val dataTarget = VdomAttr("data-target")
@@ -37,9 +36,7 @@ object App {
             InterpreterOutcomeView.interpreterOutcomeView(result)
           )
         }
-      <.div(^.`class` := "container",
-        <.h2("Simply-Typed Lambda Calculus"),
-        <.p("A Scala implementation of ", <.a(^.href := "https://www.andres-loeh.de/LambdaPi/", "https://www.andres-loeh.de/LambdaPi/")),
+      <.div(^.`class` := "tab-pane fade show active", ^.id := "simply",
         <.div(^.`class` := "btn-group", ^.role := "group",
           <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", dataToggle := "collapse", dataTarget := "#instructions-table", "Show/hide instructions"),
           <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", dataToggle := "collapse", dataTarget := "#bindings-table", "Show/hide bindings"),
@@ -62,9 +59,7 @@ object App {
             <.input(^.`type` := "text", ^.`class` := "form-control", ^.autoFocus := true, ^.placeholder := "Enter λ-calculus terms here...", ^.onChange ==> onChange, ^.value := input),
             <.div(^.`class` := "input-group-append",
               <.button(^.`class` := "btn btn-primary", ^.`type` := "submit", "Execute", ^.onClick --> onEvaluatePressed)))),
-        InterpreterOutcomeView.interpreterOutcomeView(result).unless(input.isEmpty)
-      )
-
+        InterpreterOutcomeView.interpreterOutcomeView(result).unless(input.isEmpty))
     }
 
     private def onReset: Callback =
