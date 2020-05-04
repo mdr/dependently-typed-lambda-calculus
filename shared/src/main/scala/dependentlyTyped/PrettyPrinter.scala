@@ -13,34 +13,47 @@ object PrettyPrinter {
       case Term.BoundVariable(n) => n.toString
       case Term.FreeVariable(name) => prettyPrint(name)
       case Term.Application(function, argument) =>
-        val parensForArg = cond(argument) { case Term.Inf(Term.Application(_, _)) => true }
-        s"${prettyPrint(function, nameSupplier)} ${maybeParens(parensForArg, prettyPrint(argument, nameSupplier))}"
+        val parensForFunction = cond(function) {
+          case Term.Pi(_, _) => true
+        }
+        val parensForArg = cond(argument) {
+          case Term.Inf(Term.Application(_, _)) => true
+          case Term.Inf(Term.Pi(_, _)) => true
+        }
+        val prettyPrintedFunction = maybeParens(parensForFunction, prettyPrint(function, nameSupplier))
+        val prettyPrintedArgument = maybeParens(parensForArg, prettyPrint(argument, nameSupplier))
+        s"$prettyPrintedFunction $prettyPrintedArgument"
       case Term.* => "*"
       case Term.Pi(argumentType, resultType) =>
         if (!containsBoundVariable(resultType, 0)) {
-          val parensForArgType = cond(argumentType) {
-            case Term.Inf(Term.Annotated(_, _)) => true
-            case Term.Inf(Term.Pi(_, _)) => true
-            case Term.Lambda(_) => true
-          }
-          val parensForResultType = cond(resultType) {
-            case Term.Inf(Term.Annotated(_, _)) => true
-            case Term.Lambda(_) => true
-          }
-          s"${maybeParens(parensForArgType, prettyPrint(argumentType, nameSupplier))} -> ${maybeParens(parensForResultType, prettyPrint(resultType, nameSupplier))}"
+          prettyPrintFunctionType(argumentType, resultType, nameSupplier)
         } else {
-          val (argumentTypes, ultimateResultType) = getPis(term)
-          val freeNames = resultType.freeVariables.collect { case Name.Global(name) => name }
-          val (names, newNameSupplier) = nameSupplier.getNames(argumentTypes.size, avoid = freeNames)
-          val newUltimateResultType = names.reverse.zipWithIndex.foldRight(ultimateResultType) {
-            case ((name, index), body) => body.substitute(index, Term.FreeVariable(Name.Global(name)))
-          }
-          val prettyPrintedArgs = names.zip(argumentTypes).map {
-            case (name, argumentType) => s"($name :: ${prettyPrint(argumentType, newNameSupplier)})"
-          }.mkString(" ")
-          s"∀ $prettyPrintedArgs . ${prettyPrint(newUltimateResultType, newNameSupplier)}"
+          prettyPrintPiType(term, nameSupplier)
         }
     }
+
+  private def prettyPrintPiType(term: InferrableTerm, nameSupplier: NameSupplier): String = {
+    val PiCollectorResult(traversedPis, ultimateResultType, newNameSupplier) = collectPis(term, nameSupplier)
+    val prettyPrintedArgs = traversedPis.map { case TraversedPi(argumentName, argumentType) =>
+      s"($argumentName :: ${prettyPrint(argumentType, newNameSupplier)})"
+    }.mkString(" ")
+    s"∀ $prettyPrintedArgs . ${prettyPrint(ultimateResultType, newNameSupplier)}"
+  }
+
+  private def prettyPrintFunctionType(argumentType: CheckableTerm, resultType: CheckableTerm, nameSupplier: NameSupplier): String = {
+    val parensForArgType = cond(argumentType) {
+      case Term.Inf(Term.Annotated(_, _)) => true
+      case Term.Inf(Term.Pi(_, _)) => true
+      case Term.Lambda(_) => true
+    }
+    val parensForResultType = cond(resultType) {
+      case Term.Inf(Term.Annotated(_, _)) => true
+      case Term.Lambda(_) => true
+    }
+    val prettyPrintedArgumentType = maybeParens(parensForArgType, prettyPrint(argumentType, nameSupplier))
+    val prettyPrintedResultType = maybeParens(parensForResultType, prettyPrint(resultType, nameSupplier))
+    s"$prettyPrintedArgumentType -> $prettyPrintedResultType"
+  }
 
   @tailrec
   private def containsBoundVariable(term: CheckableTerm, n: Int): Boolean =
@@ -59,18 +72,26 @@ object PrettyPrinter {
       case Term.Application(function, argument) => containsBoundVariable(function, n) || containsBoundVariable(argument, n)
     }
 
-  private def getPis(term: CheckableTerm): (Seq[CheckableTerm], CheckableTerm) =
+  case class TraversedPi(argumentName: String, argType: CheckableTerm)
+
+  case class PiCollectorResult(traversedPis: Seq[TraversedPi], ultimateResultType: CheckableTerm, nameSupplier: NameSupplier) {
+    def prepend(traversedPi: TraversedPi): PiCollectorResult = copy(traversedPis = traversedPi +: traversedPis)
+  }
+
+  private def collectPis(term: CheckableTerm, nameSupplier: NameSupplier): PiCollectorResult =
     term match {
-      case Term.Inf(subterm) => getPis(subterm)
-      case Term.Lambda(_) => Seq.empty -> term
+      case Term.Inf(term) => collectPis(term, nameSupplier)
+      case Term.Lambda(_) => PiCollectorResult(Seq.empty, term, nameSupplier)
     }
 
-  private def getPis(term: InferrableTerm): (Seq[CheckableTerm], CheckableTerm) =
+  private def collectPis(term: InferrableTerm, nameSupplier: NameSupplier): PiCollectorResult =
     term match {
       case Term.Pi(argumentType, resultType) if containsBoundVariable(resultType, 0) =>
-        val (argumentTypes, ultimateResultType) = getPis(resultType)
-        (argumentType +: argumentTypes) -> ultimateResultType
-      case _ => Seq.empty -> term
+        val (argName, newNameSupplier) = nameSupplier.getName(avoid = getFreeVariables(resultType))
+        val traversedPi = TraversedPi(argName, argumentType)
+        val rewrittenResultType = resultType.substitute(0, Term.FreeVariable(Name.Global(argName)))
+        collectPis(rewrittenResultType, newNameSupplier).prepend(traversedPi)
+      case _ => PiCollectorResult(Seq.empty, term, nameSupplier)
     }
 
   def prettyPrint(name: Name): String =
@@ -93,7 +114,7 @@ object PrettyPrinter {
       case Term.Inf(term) => prettyPrint(term, nameSupplier)
       case Term.Lambda(_) =>
         val (numberOfLambdas, ultimateBody) = getLambdas(term)
-        val freeNames = ultimateBody.freeVariables.collect { case Name.Global(name) => name }
+        val freeNames = getFreeVariables(ultimateBody)
 
         val (names, newNameSupplier) = nameSupplier.getNames(numberOfLambdas, avoid = freeNames)
         val newBody = names.reverse.zipWithIndex.foldRight(ultimateBody) {
@@ -101,6 +122,9 @@ object PrettyPrinter {
         }
         s"(λ${names.mkString(" ")} -> ${prettyPrint(newBody, newNameSupplier)})"
     }
+
+  private def getFreeVariables(ultimateBody: CheckableTerm): Seq[String] =
+    ultimateBody.freeVariables.collect { case Name.Global(name) => name }
 
   private def maybeParens(parens: Boolean, s: String): String = if (parens) s"($s)" else s
 

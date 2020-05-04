@@ -8,25 +8,27 @@ class PrettyPrinterSpec extends FlatSpec with Matchers {
 
   it should "format function types" in {
     simpleCheck("a -> b")
+    simpleCheck("a -> *")
     simpleCheck("a -> b -> c")
     simpleCheck("∀ (a :: *) . a -> b")
-    simpleCheck("∀ (b :: Nat) (a :: Bool) . b a")
-  }
-
-  ignore should "format function types 2" in {
-    val term = Parser.parseTerm("∀ (a :: *) (b :: a) . b")
-
-    print(term)
+    simpleCheck("∀ (a :: Nat) (b :: Bool) . b a")
     simpleCheck("∀ (a :: *) (b :: a) . b")
+    simpleCheck("∀ (a :: *) (b :: a -> a) . b")
   }
 
-  private def simpleCheck(s: String) = {
-    val term = Parser.parseTerm(s)
+  it should "format applications" in {
+    simpleCheck("a b")
+    simpleCheck("a *")
+    simpleCheck("a (b -> c)")
+    simpleCheck("x (∀ (a :: *) . a)")
+    simpleCheck("x ((λa -> a) :: b)")
+    simpleCheck("a (b c)")
 
-    val prettyPrinted = PrettyPrinter.prettyPrint(term)
-
-    prettyPrinted shouldEqual s
-    Parser.parseTerm(prettyPrinted) shouldEqual term
+    simpleCheck("a b c")
+    simpleCheck("(a -> b) c")
+    simpleCheck("* c")
+    simpleCheck("(∀ (a :: *) . a) c")
+    simpleCheck("((λa -> a) :: b) c")
   }
 
   it should "work for nested lambdas" in {
@@ -35,6 +37,15 @@ class PrettyPrinterSpec extends FlatSpec with Matchers {
     val prettyPrinted = PrettyPrinter.prettyPrint(term)
 
     prettyPrinted shouldEqual "((λb a -> b (b a)) :: a)"
+    Parser.parseTerm(prettyPrinted) shouldEqual term
+  }
+
+  private def simpleCheck(s: String): Assertion = {
+    val term = Parser.parseTerm(s)
+
+    val prettyPrinted = PrettyPrinter.prettyPrint(term)
+
+    prettyPrinted shouldEqual s
     Parser.parseTerm(prettyPrinted) shouldEqual term
   }
 
