@@ -7,11 +7,9 @@ import scala.language.postfixOps
 
 object Parser extends RegexParsers {
 
-  def ident: Parser[String] = (
-    "" ~> // handle whitespace
-      rep1(acceptIf(Character.isJavaIdentifierStart)("identifier expected but '" + _ + "' found"),
-        elem("identifier part", c => Character.isJavaIdentifierPart(c) || c == '\'')) ^^ (_.mkString)
-    )
+  def ident: Parser[String] = "" ~> // handle whitespace
+    rep1(acceptIf(c => Character.isJavaIdentifierStart(c) && c != 'λ')("identifier expected but '" + _ + "' found"),
+      elem("identifier part", c => Character.isJavaIdentifierPart(c) || c == '\'')) ^^ (_.mkString)
 
   def parseStatementSafe(s: String): Either[String, Statement] = toEither(parseAll(statement, s))
 

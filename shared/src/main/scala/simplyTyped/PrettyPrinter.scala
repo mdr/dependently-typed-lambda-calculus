@@ -7,7 +7,7 @@ object PrettyPrinter {
 
   def prettyPrint(term: InferrableTerm, nameSupplier: NameSupplier = NameSupplier()): String =
     term match {
-      case Term.Annotated(term, typ) => s"((${prettyPrint(term, nameSupplier)}) :: ${prettyPrint(typ)})"
+      case Term.Annotated(term, typ) => s"(${prettyPrint(term, nameSupplier)} :: ${prettyPrint(typ)})"
       case Term.BoundVariable(n) => n.toString
       case Term.FreeVariable(name) => prettyPrint(name)
       case Term.Application(function, argument) =>

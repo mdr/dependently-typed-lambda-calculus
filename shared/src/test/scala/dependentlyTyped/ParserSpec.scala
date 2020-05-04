@@ -2,6 +2,7 @@ package dependentlyTyped
 
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
+import Term._
 
 class ParserSpec extends FlatSpec with Matchers {
 
@@ -84,9 +85,8 @@ class ParserSpec extends FlatSpec with Matchers {
         |  :: forall (m :: Bool -> *) . m False -> m True -> forall (b :: Bool) . m b""".stripMargin)
   }
 
-  "thing" should "work" in {
-    val term = Parser.parseTerm("""forall (a :: *) . a -> a""")
-    import Term._
+  it should "still work" in {
+    val term = Parser.parseTerm("forall (a :: *) . a -> a")
     term shouldEqual Pi(Inf(*), Inf(Pi(Inf(BoundVariable(0)), Inf(BoundVariable(1)))))
   }
 

@@ -7,14 +7,14 @@ object PrettyPrinter {
 
   def prettyPrint(term: InferrableTerm, nameSupplier: NameSupplier = NameSupplier()): String =
     term match {
-      case Term.Annotated(term, typ) => s"((${prettyPrint(term, nameSupplier)}) :: ${prettyPrint(typ, nameSupplier)})"
+      case Term.Annotated(term, typ) => s"(${prettyPrint(term, nameSupplier)} :: ${prettyPrint(typ, nameSupplier)})"
       case Term.BoundVariable(n) => n.toString
       case Term.FreeVariable(name) => prettyPrint(name)
       case Term.Application(function, argument) =>
         val parensForArg = cond(argument) { case Term.Inf(Term.Application(_, _)) => true }
         s"${prettyPrint(function, nameSupplier)} ${maybeParens(parensForArg, prettyPrint(argument, nameSupplier))}"
       case Term.* => "*"
-      case Term.Pi(argumentType, resultType) =>
+      case Term.Pi(_, resultType) =>
         val (argumentTypes, ultimateResultType) = getPis(term)
         val freeNames = resultType.freeVariables.collect { case Name.Global(name) => name }
         val (names, newNameSupplier) = nameSupplier.getNames(argumentTypes.size, avoid = freeNames)
