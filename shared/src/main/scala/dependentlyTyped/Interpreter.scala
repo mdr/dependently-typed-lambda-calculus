@@ -26,14 +26,17 @@ object InterpreterState {
 }
 
 
-sealed trait InterpreterResult
+
+sealed trait InterpreterResult {
+  val newInterpreterState: InterpreterState
+}
 
 object InterpreterResult {
   type InterpreterOutcome = Either[String, InterpreterResult]
 
-  case class Evaluated(name: String, value: Value, typ: Type) extends InterpreterResult
+  case class Evaluated(name: String, value: Value, typ: Type, newInterpreterState: InterpreterState) extends InterpreterResult
 
-  case class Assume(name: String, typ: Type) extends InterpreterResult
+  case class Assume(name: String, typ: Type, newInterpreterState: InterpreterState) extends InterpreterResult
 
 }
 
@@ -60,8 +63,7 @@ object Interpreter {
 
     val newInterpreterState = resultEither match {
       case Left(_) => interpreterState
-      case Right(InterpreterResult.Evaluated(name, value, typ)) => interpreterState.bind(name, value, typ)
-      case Right(InterpreterResult.Assume(name, info)) => interpreterState.assume(name, info)
+      case Right(result) => result.newInterpreterState
     }
     newInterpreterState -> resultEither
   })
@@ -69,7 +71,7 @@ object Interpreter {
   def eval(name: String): InterpreterMonad[CheckableTerm] =
     for {
       resultEither <- interpret(name)
-      Right(InterpreterResult.Evaluated(_, value, _)) = resultEither
+      Right(InterpreterResult.Evaluated(_, value, _, _)) = resultEither
     } yield Quoter.quote(value)
 
   private def interpret(s: String, state: InterpreterState): Either[String, InterpreterResult] = {
@@ -89,11 +91,13 @@ object Interpreter {
   private def interpretAssume(name: String, typ: InferrableTerm, state: InterpreterState): Either[String, InterpreterResult] =
     for {
       _ <- TypeChecker.checkType(Term.Inf(typ), Value.*, state.Γ, 0)
-    } yield InterpreterResult.Assume(name, Evaluator.eval(typ, state.environment))
+      evaluatedType = Evaluator.eval(typ, state.environment)
+    } yield InterpreterResult.Assume(name, evaluatedType, state.assume(name, evaluatedType))
 
   private def interpretExpression(name: String, term: InferrableTerm, state: InterpreterState): Either[String, InterpreterResult] =
     for {
       typ <- TypeChecker.inferType(term, state.Γ)
-    } yield InterpreterResult.Evaluated(name, Evaluator.eval(term, state.environment), typ)
+      value = Evaluator.eval(term, state.environment)
+    } yield InterpreterResult.Evaluated(name, value, typ, state.bind(name, value, typ))
 
 }
