@@ -1,10 +1,12 @@
 * Type checker issue:
 ```
-λπ> let succ = (λ a n f x -> f (n a f x)) :: forall (a :: *) . ((a -> a) -> (a -> a)) -> ((a -> a) -> (a -> a))
-Type mismatch. Expected type '(forall (a :: Local-0) . Local-0)', but was inferred as '*'.
+λπ> let idType = forall (a :: *) . a -> a
+idType :: *
+∀ (a :: *) . a -> a
+λπ> let id = (\a x -> x) :: idType
+
+let zero = (λa f x -> x) :: forall (a :: *) . (a -> a) -> (a -> a)
+let succ = (λn a f x -> f (n a f x)) :: (forall (a :: *) . (a -> a) -> (a -> a)) -> (forall (a :: *) . (a -> a) -> (a -> a))
 ```
-* Unicode arrows
 * Web FE
   * Split between simple / dependently typed tabs
-* Pretty printer for `->`
-* Assume statement syntax

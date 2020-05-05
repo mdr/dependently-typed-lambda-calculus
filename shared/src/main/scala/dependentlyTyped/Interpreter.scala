@@ -107,13 +107,13 @@ object Interpreter {
 
   private def interpretAssumption(name: String, typ: InferrableTerm, state: InterpreterState): Either[String, (InterpreterResult.Assumption, InterpreterState)] =
     for {
-      _ <- TypeChecker.checkType(Term.Inf(typ), Value.*, state.Γ, 0)
+      _ <- TypeChecker.checkType(Term.Inf(typ), Value.*, state.Γ, state.environment, 0)
       evaluatedType = Evaluator.eval(typ, state.environment)
     } yield InterpreterResult.Assumption(name, evaluatedType) -> state.assume(name, evaluatedType)
 
   private def interpretExpression(name: String, term: InferrableTerm, state: InterpreterState): Either[String, InterpreterResult] =
     for {
-      typ <- TypeChecker.inferType(term, state.Γ)
+      typ <- TypeChecker.inferType(term, state.Γ, state.environment)
       value = Evaluator.eval(term, state.environment)
     } yield InterpreterResult.Evaluated(name, value, typ, state.bind(name, value, typ))
 
