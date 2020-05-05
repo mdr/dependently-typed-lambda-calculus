@@ -1,8 +1,8 @@
-package simplyTyped
+package dependentlyTyped
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
-import simplyTyped.InterpreterResult.InterpreterOutcome
+import InterpreterResult.InterpreterOutcome
 
 object InterpreterOutcomeView {
 
@@ -13,8 +13,7 @@ object InterpreterOutcomeView {
       case Right(InterpreterResult.Assume(assumptions, _)) =>
         <.div(^.`class` := "alert alert-info", ^.role := "alert",
           assumptions.map {
-            case InterpreterResult.Assumption(name, HasKind(kind)) => <.code(s"$name :: $kind")
-            case InterpreterResult.Assumption(name, HasType(typ)) => <.code(s"$name :: $typ")
+            case InterpreterResult.Assumption(name, typ) => <.code(s"$name :: $typ")
           }.flatMap(tag => Seq(tag, <.br())).init.toTagMod)
       case Right(InterpreterResult.Evaluated(name, value, typ, _)) =>
         <.div(^.`class` := "alert alert-success", ^.role := "alert",

@@ -1,4 +1,4 @@
-package simplyTyped
+package dependentlyTyped
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
@@ -14,7 +14,7 @@ object InstructionsTable {
           ),
           <.tr(
             <.td("Define a variable"),
-            <.td(<.code("""let two = (\f x -> f (f x)) :: (a -> a) -> (a -> a)""")),
+            <.td(<.code("""let two = (\a f x -> f (f x)) :: forall (a :: *) . (a -> a) -> (a -> a)""")),
           ),
           <.tr(
             <.td("Evaluate an expression"),

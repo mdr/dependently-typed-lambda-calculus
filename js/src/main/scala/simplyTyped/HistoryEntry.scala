@@ -1,7 +1,5 @@
 package simplyTyped
 
-import simplyTyped.InterpreterResult.InterpreterOutcome
+import InterpreterResult.InterpreterOutcome
 
-case class HistoryEntry(input: String, outcome: InterpreterOutcome) {
-
-}
+case class HistoryEntry(input: String, outcome: InterpreterOutcome)
