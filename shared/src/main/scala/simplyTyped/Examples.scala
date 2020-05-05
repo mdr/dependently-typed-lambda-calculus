@@ -5,7 +5,7 @@ object Examples {
   val churchNumeralsInterpreterState: InterpreterState = {
     val session =
       for {
-        _ <- Interpreter.interpret("assume a :: *")
+        _ <- Interpreter.interpret("assume (a :: *)")
         _ <- Interpreter.interpret("let zero = (λf x -> x) :: (a -> a) -> (a -> a)")
         _ <- Interpreter.interpret("let one = (λf x -> f x) :: (a -> a) -> (a -> a)")
         _ <- Interpreter.interpret("let succ = (λn f x -> f (n f x)) :: ((a -> a) -> (a -> a)) -> ((a -> a) -> (a -> a))")

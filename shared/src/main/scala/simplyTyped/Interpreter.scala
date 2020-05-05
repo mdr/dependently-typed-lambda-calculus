@@ -31,11 +31,14 @@ sealed trait InterpreterResult {
 }
 
 object InterpreterResult {
+
+  case class Assumption(name: String, info: Info)
+
   type InterpreterOutcome = Either[String, InterpreterResult]
 
   case class Evaluated(name: String, value: Value, typ: Type, newInterpreterState: InterpreterState) extends InterpreterResult
 
-  case class Assume(name: String, info: Info, newInterpreterState: InterpreterState) extends InterpreterResult
+  case class Assume(assumptions: Seq[Assumption], newInterpreterState: InterpreterState) extends InterpreterResult
 
 }
 
@@ -88,14 +91,33 @@ object Interpreter {
     statement match {
       case Statement.Eval(term) => interpretExpression("it", term, state)
       case Statement.Let(name, term) => interpretExpression(name, term, state)
-      case Statement.Assume(name, HasType(typ)) => interpretAssume(name, typ, state)
-      case Statement.Assume(name, info) => Right(InterpreterResult.Assume(name, info, state.assume(name, info)))
+      case Statement.Assume(assumptions) => interpretAssumptions(assumptions, state)
     }
 
-  private def interpretAssume(name: String, typ: Type, state: InterpreterState): Either[String, InterpreterResult] =
+  private def interpretAssumptions(assumptions: Seq[Assumption], state: InterpreterState): Either[String, InterpreterResult] = {
+    var currentState = state
+    var assumptionResults: Seq[InterpreterResult.Assumption] = Seq.empty
+    for (Assumption(name, info) <- assumptions) {
+      interpretAssumption(name, info, currentState) match {
+        case Left(message) => return Left(message)
+        case Right((assumptionResult, newState)) =>
+          currentState = newState
+          assumptionResults :+= assumptionResult
+      }
+    }
+    Right(InterpreterResult.Assume(assumptionResults, currentState))
+  }
+
+  private def interpretAssumption(name: String, info: Info, state: InterpreterState): Either[String, (InterpreterResult.Assumption, InterpreterState)] =
+    info match {
+      case HasKind(_) => Right(InterpreterResult.Assumption(name, info) -> state.assume(name, info))
+      case HasType(typ) => interpretAssumption(name, typ, state)
+    }
+
+  private def interpretAssumption(name: String, typ: Type, state: InterpreterState): Either[String, (InterpreterResult.Assumption, InterpreterState)] =
     for {
       _ <- TypeChecker.checkKind(typ, *, state.Γ)
-    } yield InterpreterResult.Assume(name, HasType(typ), state.assume(name, HasType(typ)))
+    } yield InterpreterResult.Assumption(name, HasType(typ)) -> state.assume(name, HasType(typ))
 
   private def interpretExpression(name: String, term: InferrableTerm, state: InterpreterState): Either[String, InterpreterResult] =
     for {

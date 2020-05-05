@@ -6,7 +6,7 @@ sealed trait InferrableTerm {
 
   def apply(argument: CheckableTerm): InferrableTerm = Term.Application(this, argument)
 
-//  override def toString: String = PrettyPrinter.prettyPrint(this)
+  override def toString: String = PrettyPrinter.prettyPrint(this)
 
   def freeVariables: Seq[Name]
 
@@ -60,7 +60,7 @@ object CheckableTerm {
 
 sealed trait CheckableTerm {
 
-//  override def toString: String = PrettyPrinter.prettyPrint(this, NameSupplier())
+  override def toString: String = PrettyPrinter.prettyPrint(this, NameSupplier())
 
   def freeVariables: Seq[Name]
 

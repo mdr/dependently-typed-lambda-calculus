@@ -10,10 +10,12 @@ object InterpreterOutcomeView {
     .render_P {
       case Left(error) =>
         <.div(^.`class` := "alert alert-danger", ^.role := "alert", "Error: ", <.code(error))
-      case Right(InterpreterResult.Assume(name, HasKind(kind), _)) =>
-        <.div(^.`class` := "alert alert-info", ^.role := "alert", <.code(s"$name :: $kind"))
-      case Right(InterpreterResult.Assume(name, HasType(typ), _)) =>
-        <.div(^.`class` := "alert alert-info", ^.role := "alert", <.code(s"$name :: $typ"))
+      case Right(InterpreterResult.Assume(assumptions, _)) =>
+        <.div(^.`class` := "alert alert-info", ^.role := "alert",
+          assumptions.map {
+            case InterpreterResult.Assumption(name, HasKind(kind)) => <.code(s"$name :: $kind")
+            case InterpreterResult.Assumption(name, HasType(typ)) => <.code(s"$name :: $typ")
+          }.toTagMod)
       case Right(InterpreterResult.Evaluated(name, value, typ, _)) =>
         <.div(^.`class` := "alert alert-success", ^.role := "alert",
           <.code(s"$name :: $typ"),

@@ -38,9 +38,11 @@ object Parser extends RegexParsers {
     case name ~ expression => Statement.Let(name, expression)
   }
 
-  lazy val assumeStatement: Parser[Statement.Assume] = ("assume" ~> ident <~ "::") ~ info ^^ {
-    case name ~ info => Statement.Assume(name, info)
+  lazy val assumption: Parser[Assumption] = ("(" ~> ident <~ "::") ~ info <~ ")" ^^ {
+    case name ~ info => Assumption(name, info)
   }
+
+  lazy val assumeStatement: Parser[Statement.Assume] = ("assume" ~> rep1(assumption)) ^^ Statement.Assume
 
   lazy val info: Parser[Info] = "*" ^^^ HasKind(*) | typ ^^ HasType
 
@@ -93,7 +95,7 @@ object Parser extends RegexParsers {
     rep1sep(simpleType, arrow) ^^
       (_.reduceRight[Type] { case (functionType, argumentType) => FunctionType(functionType, argumentType) })
 
-  lazy val arrow = "->" | "→"
+  lazy val arrow: Parser[String] = "->" | "→"
 
   def simpleType: Parser[Type] = freeType | "(" ~> typ <~ ")"
 

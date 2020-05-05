@@ -10,11 +10,11 @@ object InstructionsTable {
         <.tbody(
           <.tr(
             <.td("Assume a type variable"),
-            <.td(<.code("assume a :: *")),
+            <.td(<.code("assume (a :: *)")),
           ),
           <.tr(
             <.td("Assume a variable of a given type"),
-            <.td(<.code("assume x :: a")),
+            <.td(<.code("assume (x :: a)")),
           ),
           <.tr(
             <.td("Define a variable"),
