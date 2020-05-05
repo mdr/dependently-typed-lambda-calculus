@@ -12,7 +12,9 @@ object InterpreterMain extends App {
     interpreterState = newState
     resultEither match {
       case Left(error) => println(error)
-      case Right(InterpreterResult.Assume(name, typ, _)) => println(s"$name :: $typ")
+      case Right(InterpreterResult.Assume(assumptions, _)) =>
+        for (InterpreterResult.Assumption(name, typ) <- assumptions)
+          println(s"$name :: $typ")
       case Right(InterpreterResult.Evaluated(name, value, typ, _)) =>
         println(s"$name :: $typ")
         println(value)

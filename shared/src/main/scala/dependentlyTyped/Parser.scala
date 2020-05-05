@@ -36,9 +36,12 @@ object Parser extends RegexParsers {
     case name ~ expression => Statement.Let(name, expression)
   }
 
-  lazy val assumeStatement: Parser[Statement.Assume] = ("assume" ~> ident <~ "::") ~ term ^^ {
-    case name ~ info => Statement.Assume(name, info)
+  lazy val assumption: Parser[Assumption] = ("(" ~> ident <~ "::") ~ term <~ ")" ^^ {
+    case name ~ info => Assumption(name, info)
   }
+
+  lazy val assumeStatement: Parser[Statement.Assume] = ("assume" ~> rep1(assumption)) ^^ Statement.Assume
+
 
   lazy val term: Parser[InferrableTerm] = piTerm | maybeAnnotatedTerm
 
