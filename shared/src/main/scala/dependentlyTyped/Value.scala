@@ -20,6 +20,12 @@ object Value {
 
   case class Succ(value: Value) extends Value
 
+  case class Nil(elementType: Value) extends Value
+
+  case class Cons(elementType: Value, length: Value, head: Value, tail: Value) extends Value
+
+  case class Vec(elementType: Value, length: Value) extends Value
+
   case class Pi(argumentType: Value, dependentResultType: Value => Value) extends Value
 
   def freeVariable(name: Name): Value = Neutral(dependentlyTyped.Neutral.FreeVariable(name))

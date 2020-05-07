@@ -10,6 +10,9 @@ object Quoter {
       case Value.Nat => Term.Nat
       case Value.Zero => Term.Zero
       case Value.Succ(term) => Term.Succ(quote(term, bindersPassed))
+      case Value.Nil(elementType) => Term.Nil(quote(elementType, bindersPassed))
+      case Value.Cons(elementType, length, head, tail) => Term.Cons(quote(elementType, bindersPassed), quote(length, bindersPassed), quote(head, bindersPassed), quote(tail, bindersPassed))
+      case Value.Vec(elementType, length) => Term.Vec(quote(elementType, bindersPassed), quote(length, bindersPassed))
       case Value.Pi(argumentType, dependentResultType) =>
         val quotedArgumentType = quote(argumentType, bindersPassed)
         val quotedResultType = quote(dependentResultType.apply(Value.freeVariable(Name.Quote(bindersPassed))), bindersPassed + 1)

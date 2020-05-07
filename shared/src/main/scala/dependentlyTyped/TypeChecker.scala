@@ -53,6 +53,25 @@ object TypeChecker {
           _ <- checkType(n, Value.Nat, Γ, environment, bindersPassed)
           nValue = Evaluator.eval(n, environment)
         } yield Evaluator.apply(motiveValue, nValue)
+      case Term.Nil(elementType) =>
+        for {
+          _ <- checkType(elementType, Value.*, Γ, environment, bindersPassed)
+          evaluatedElementType = Evaluator.eval(elementType, Environment.empty)
+        } yield Value.Vec(evaluatedElementType, Value.Zero)
+      case Term.Cons(elementType, length, head, tail) =>
+        for {
+          _ <- checkType(elementType, Value.*, Γ, environment, bindersPassed)
+          _ <- checkType(length, Value.Nat, Γ, environment, bindersPassed)
+          evaluatedElementType = Evaluator.eval(elementType, Environment.empty)
+          evaluatedLength = Evaluator.eval(length, Environment.empty)
+          _ <- checkType(head, evaluatedElementType, Γ, environment, bindersPassed)
+          _ <- checkType(tail, Value.Vec(evaluatedElementType, evaluatedLength), Γ, environment, bindersPassed)
+        } yield Value.Vec(evaluatedElementType, Value.Succ(evaluatedLength))
+      case Term.Vec(elementType, length) =>
+        for {
+          _ <- checkType(elementType, Value.*, Γ, environment, bindersPassed)
+          _ <- checkType(length, Value.Nat, Γ, environment, bindersPassed)
+        } yield Value.*
       case Pi(argumentType, resultType) =>
         for {
           _ <- checkType(argumentType, Value.*, Γ, environment, bindersPassed)

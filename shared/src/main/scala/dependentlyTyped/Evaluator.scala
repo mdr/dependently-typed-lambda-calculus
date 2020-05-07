@@ -35,13 +35,18 @@ object Evaluator {
       case Term.NatElim(motive, zeroCase, succCase, n) =>
         val zeroValue = eval(zeroCase, env)
         val succValue = eval(succCase, env)
+
         def rec(value: Value): Value = value match {
           case Value.Zero => zeroValue
           case Value.Succ(subValue) => apply(apply(succValue, subValue), rec(subValue))
           case Value.Neutral(neutral) => Value.Neutral(Neutral.NatElim(eval(motive, env), zeroValue, succValue, neutral))
           case _ => throw new AssertionError(s"NatElim error: $value")
         }
+
         rec(eval(n, env))
+      case Term.Nil(elementType) => Value.Nil(eval(elementType, env))
+      case Term.Cons(elementType, length, head, tail) => Value.Cons(eval(elementType, env), eval(length, env), eval(head, env), eval(tail, env))
+      case Term.Vec(elementType, length) => Value.Vec(eval(elementType, env), eval(length, env))
     }
 
   def eval(term: CheckableTerm, env: Environment): Value =
@@ -54,7 +59,7 @@ object Evaluator {
     function match {
       case Value.Lambda(function) => function(argument)
       case Value.Neutral(value) => Value.Neutral(Neutral.Application(value, argument))
-      case Value.Zero | Value.Succ(_) | Value.* | Value.Nat | Value.Pi(_, _) =>
+      case Value.Nil(_) | Value.Cons(_, _, _, _) | Value.Vec(_, _) | Value.Zero | Value.Succ(_) | Value.* | Value.Nat | Value.Pi(_, _) =>
         throw new AssertionError(s"Cannot apply $function as a function")
     }
 

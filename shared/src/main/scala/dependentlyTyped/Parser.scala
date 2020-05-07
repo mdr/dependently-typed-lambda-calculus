@@ -70,7 +70,7 @@ object Parser extends RegexParsers {
   lazy val succ: Parser[Succ] = "Succ_" ~> argument ^^ Succ
 
   lazy val maybeApplicationTerm: Parser[InferrableTerm] = natElim | succ | simpleTerm ~ rep(argument) ^^ {
-    case term ~ Nil => term
+    case term ~ List() => term
     case function ~ arguments => arguments.foldLeft(function)((curriedFunction, arg) => Application(curriedFunction, arg))
   }
 
@@ -118,6 +118,9 @@ object Parser extends RegexParsers {
       case Zero => Zero
       case Succ(term) => Succ(term.substitute(name, i))
       case NatElim(motive, zeroCase, succCase, n) => NatElim(motive.substitute(name, i), zeroCase.substitute(name, i), succCase.substitute(name, i), n.substitute(name, i))
+      case Nil(elementType) => Nil(elementType.substitute(name, i))
+      case Cons(elementType, length, head, tail) => Cons(elementType.substitute(name, i), length.substitute(name, i), head.substitute(name, i), tail.substitute(name, i))
+      case Vec(elementType, length) => Vec(elementType.substitute(name, i), length.substitute(name, i))
       case Pi(argumentType, resultType) => Pi(argumentType.substitute(name, i), resultType.substitute(name, i + 1))
     }
   }

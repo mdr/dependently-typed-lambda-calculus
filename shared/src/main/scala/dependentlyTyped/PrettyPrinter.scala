@@ -55,6 +55,18 @@ object PrettyPrinter {
         val prettyPrintedSuccCase = s"${prettyPrintWithParensIfNeeded(succCase, nameSupplier)}"
         val prettyPrintedN = s"${prettyPrintWithParensIfNeeded(n, nameSupplier)}"
         s"natElim $prettyPrintedMotive $prettyPrintedZeroCase $prettyPrintedSuccCase $prettyPrintedN"
+      case Term.Nil(elementType) =>
+        s"Nil ${prettyPrintWithParensIfNeeded(elementType, nameSupplier)}"
+      case Term.Cons(elementType, length, head, tail) =>
+        val prettyPrintedElementType = s"${prettyPrintWithParensIfNeeded(elementType, nameSupplier)}"
+        val prettyPrintedLength = s"${prettyPrintWithParensIfNeeded(length, nameSupplier)}"
+        val prettyPrintedHead = s"${prettyPrintWithParensIfNeeded(head, nameSupplier)}"
+        val prettyPrintedTail = s"${prettyPrintWithParensIfNeeded(tail, nameSupplier)}"
+        s"Cons $prettyPrintedElementType $prettyPrintedLength $prettyPrintedHead $prettyPrintedTail"
+      case Term.Vec(elementType, length) =>
+        val prettyPrintedElementType = s"${prettyPrintWithParensIfNeeded(elementType, nameSupplier)}"
+        val prettyPrintedLength = s"${prettyPrintWithParensIfNeeded(length, nameSupplier)}"
+        s"Vec $prettyPrintedElementType $prettyPrintedLength"
       case Term.Pi(argumentType, resultType) =>
         if (!containsBoundVariable(resultType, 0)) {
           prettyPrintFunctionType(argumentType, resultType, nameSupplier)
@@ -119,6 +131,9 @@ object PrettyPrinter {
       case Term.Zero => false
       case Term.Succ(term) => containsBoundVariable(term, n)
       case Term.NatElim(motive, zeroCase, succCase, num) => containsBoundVariable(motive, n) || containsBoundVariable(zeroCase, n) || containsBoundVariable(succCase, n) || containsBoundVariable(num, n)
+      case Term.Nil(elementType) => containsBoundVariable(elementType, n)
+      case Term.Cons(elementType, length, head, tail) => containsBoundVariable(elementType, n) || containsBoundVariable(length, n) || containsBoundVariable(head, n) || containsBoundVariable(tail, n)
+      case Term.Vec(elementType, length) => containsBoundVariable(elementType, n) || containsBoundVariable(length, n)
     }
 
   case class TraversedPi(argumentName: String, argType: CheckableTerm)

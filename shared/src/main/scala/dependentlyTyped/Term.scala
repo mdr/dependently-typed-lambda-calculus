@@ -58,6 +58,18 @@ object Term {
     override def freeVariables: Seq[Name] = motive.freeVariables ++ zeroCase.freeVariables ++ succCase.freeVariables ++ n.freeVariables
   }
 
+  case class Vec(elementType: CheckableTerm, length: CheckableTerm) extends InferrableTerm {
+    override def freeVariables: Seq[Name] = elementType.freeVariables ++ length.freeVariables
+  }
+
+  case class Nil(elementType: CheckableTerm) extends InferrableTerm {
+    override def freeVariables: Seq[Name] = elementType.freeVariables
+  }
+
+  case class Cons(elementType: CheckableTerm, length: CheckableTerm, head: CheckableTerm, tail: CheckableTerm) extends InferrableTerm {
+    override def freeVariables: Seq[Name] = elementType.freeVariables ++ length.freeVariables ++ head.freeVariables ++ tail.freeVariables
+  }
+
   case class Inf(term: InferrableTerm) extends CheckableTerm {
     override def freeVariables: Seq[Name] = term.freeVariables
   }
