@@ -18,7 +18,7 @@ object InstructionsTable {
           ),
           <.tr(
             <.td("Evaluate an expression"),
-            <.td(<.code("""two (\x -> x)""")),
+            <.td(<.code("""two String (\x -> x)""")),
           )
         ),
       )
