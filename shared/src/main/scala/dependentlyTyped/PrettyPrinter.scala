@@ -48,7 +48,11 @@ object PrettyPrinter {
             s"Succ ${prettyPrintWithParensIfNeeded(subTerm, nameSupplier)}"
         }
       case Term.NatElim(motive, zeroCase, succCase, n) =>
-        s"natElim ${prettyPrintWithParensIfNeeded(motive, nameSupplier)} ${prettyPrintWithParensIfNeeded(zeroCase, nameSupplier)} ${prettyPrintWithParensIfNeeded(succCase, nameSupplier)} ${prettyPrintWithParensIfNeeded(n, nameSupplier)})"
+        val prettyPrintedMotive = s"${prettyPrintWithParensIfNeeded(motive, nameSupplier)}"
+        val prettyPrintedZeroCase = s"${prettyPrintWithParensIfNeeded(zeroCase, nameSupplier)}"
+        val prettyPrintedSuccCase = s"${prettyPrintWithParensIfNeeded(succCase, nameSupplier)}"
+        val prettyPrintedN = s"${prettyPrintWithParensIfNeeded(n, nameSupplier)}"
+        s"natElim $prettyPrintedMotive $prettyPrintedZeroCase $prettyPrintedSuccCase $prettyPrintedN"
       case Term.Pi(argumentType, resultType) =>
         if (!containsBoundVariable(resultType, 0)) {
           prettyPrintFunctionType(argumentType, resultType, nameSupplier)
