@@ -7,6 +7,8 @@ import scala.annotation.tailrec
 
 object PrettyPrinter {
 
+  private def isNum(term: InferrableTerm): Boolean = count(term).isDefined
+
   private def count(term: InferrableTerm): Option[Int] =
     term match {
       case Term.Zero => Some(0)
@@ -28,13 +30,13 @@ object PrettyPrinter {
       case Term.Application(function, argument) =>
         val parensForFunction = cond(function) {
           case Term.Annotated(_, _) => true
-          case Term.Succ(_) => true
+          case Term.Succ(_) if !isNum(function) => true
           case Term.Pi(_, _) => true
         }
         val parensForArg = cond(argument) {
           case Term.Inf(Term.Application(_, _)) => true
           case Term.Inf(Term.Annotated(_, _)) => true
-          case Term.Inf(Term.Succ(_)) => true
+          case Term.Inf(succ @ Term.Succ(_)) if !isNum(succ) => true
           case Term.Inf(Term.Pi(_, _)) => true
         }
         val prettyPrintedFunction = maybeParens(parensForFunction, prettyPrint(function, nameSupplier))
@@ -83,7 +85,7 @@ object PrettyPrinter {
     cond(subTerm) {
       case Term.Inf(Term.Application(_, _)) => true
       case Term.Inf(Term.Annotated(_, _)) => true
-      case Term.Inf(Term.Succ(_)) => true
+      case Term.Inf(succ @ Term.Succ(_)) => !isNum(succ)
       case Term.Inf(Term.Pi(_, _)) => true
       case Term.Lambda(_) => true
     }

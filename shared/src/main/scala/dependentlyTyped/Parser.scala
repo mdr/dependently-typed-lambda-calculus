@@ -69,7 +69,17 @@ object Parser extends RegexParsers {
 
   lazy val succ: Parser[Succ] = "Succ_" ~> argument ^^ Succ
 
-  lazy val maybeApplicationTerm: Parser[InferrableTerm] = natElim | succ | simpleTerm ~ rep(argument) ^^ {
+  lazy val nil: Parser[Nil] = "Nil_" ~> argument ^^ Nil
+
+  lazy val cons: Parser[Cons] = "Cons_" ~> argument ~ argument ~ argument ~ argument ^^ {
+    case elementType ~ length ~ head ~ tail => Cons(elementType, length, head, tail)
+  }
+
+  lazy val vec: Parser[Vec] = "Vec_" ~> argument ~ argument ^^ {
+    case elementType ~ length => Vec(elementType, length)
+  }
+
+  lazy val maybeApplicationTerm: Parser[InferrableTerm] = nil | cons | vec | natElim | succ | simpleTerm ~ rep(argument) ^^ {
     case term ~ List() => term
     case function ~ arguments => arguments.foldLeft(function)((curriedFunction, arg) => Application(curriedFunction, arg))
   }

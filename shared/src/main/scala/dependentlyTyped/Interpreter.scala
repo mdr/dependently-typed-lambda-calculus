@@ -41,6 +41,9 @@ object InterpreterState {
   val initial: InterpreterState = empty
     .interpret("let Succ = (λn -> Succ_ n) :: Nat -> Nat")
     .interpret("let natElim = (λm mz ms k -> natElim_ m mz ms k) :: ∀ (m :: Nat -> *) . m 0 -> (∀ (l :: Nat) . m l -> m (Succ_ l)) -> ∀ (k :: Nat) . m k")
+    .interpret("let Nil = (λa -> Nil_ a) :: ∀ (a :: *) . Vec_ a 0")
+    .interpret("let Cons = (λa n h t -> Cons_ a n h t) :: ∀ (a :: *) (n :: Nat) . a -> Vec_ a n -> Vec_ a (Succ n)")
+    .interpret("let Vec = (λa n -> Vec_ a n) :: * -> Nat -> *")
 
 }
 
