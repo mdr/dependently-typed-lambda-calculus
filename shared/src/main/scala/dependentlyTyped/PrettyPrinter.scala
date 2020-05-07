@@ -18,6 +18,8 @@ object PrettyPrinter {
         }
         val parensForArg = cond(argument) {
           case Term.Inf(Term.Application(_, _)) => true
+          case Term.Inf(Term.Annotated(_, _)) => true
+          case Term.Inf(Term.Succ(_)) => true
           case Term.Inf(Term.Pi(_, _)) => true
         }
         val prettyPrintedFunction = maybeParens(parensForFunction, prettyPrint(function, nameSupplier))
@@ -25,6 +27,16 @@ object PrettyPrinter {
         s"$prettyPrintedFunction $prettyPrintedArgument"
       case Term.* => "*"
       case Term.Nat => "ℕ"
+      case Term.Zero => "0"
+      case Term.Succ(term) =>
+        val parensForArg = cond(term) {
+          case Term.Inf(Term.Application(_, _)) => true
+          case Term.Inf(Term.Annotated(_, _)) => true
+          case Term.Inf(Term.Succ(_)) => true
+          case Term.Inf(Term.Pi(_, _)) => true
+          case Term.Lambda(_) => true
+        }
+        s"Succ ${maybeParens(parensForArg, prettyPrint(term, nameSupplier))}"
       case Term.Pi(argumentType, resultType) =>
         if (!containsBoundVariable(resultType, 0)) {
           prettyPrintFunctionType(argumentType, resultType, nameSupplier)
@@ -72,6 +84,8 @@ object PrettyPrinter {
       case Term.BoundVariable(m) => n == m
       case Term.FreeVariable(_) => false
       case Term.Application(function, argument) => containsBoundVariable(function, n) || containsBoundVariable(argument, n)
+      case Term.Zero => false
+      case Term.Succ(term) => containsBoundVariable(term, n)
     }
 
   case class TraversedPi(argumentName: String, argType: CheckableTerm)

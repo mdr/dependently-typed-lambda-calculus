@@ -38,6 +38,11 @@ object TypeChecker {
       case BoundVariable(_) => throwError("Unexpected Bound term in type checking")
       case Term.* => Right(Value.*)
       case Term.Nat => Right(Value.*)
+      case Term.Zero => Right(Value.Nat)
+      case Term.Succ(term) =>
+        for {
+          _ <- checkType(term, Value.Nat, Γ, environment, bindersPassed)
+        } yield Value.Nat
       case Pi(argumentType, resultType) =>
         for {
           _ <- checkType(argumentType, Value.*, Γ, environment, bindersPassed)

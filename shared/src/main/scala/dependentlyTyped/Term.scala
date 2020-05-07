@@ -42,16 +42,24 @@ object Term {
     override def freeVariables: Seq[Name] = function.freeVariables ++ argument.freeVariables
   }
 
+  case object Nat extends InferrableTerm {
+    override def freeVariables: Seq[Name] = Seq.empty
+  }
+
+  case object Zero extends InferrableTerm {
+    override def freeVariables: Seq[Name] = Seq.empty
+  }
+
+  case class Succ(term: CheckableTerm) extends InferrableTerm {
+    override def freeVariables: Seq[Name] = term.freeVariables
+  }
+
   case class Inf(term: InferrableTerm) extends CheckableTerm {
     override def freeVariables: Seq[Name] = term.freeVariables
   }
 
   case class Lambda(body: CheckableTerm) extends CheckableTerm {
     override def freeVariables: Seq[Name] = body.freeVariables
-  }
-
-  case object Nat extends InferrableTerm {
-    override def freeVariables: Seq[Name] = Seq.empty
   }
 
 }

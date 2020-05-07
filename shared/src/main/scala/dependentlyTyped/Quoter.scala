@@ -8,6 +8,8 @@ object Quoter {
       case Value.Neutral(value) => Term.Inf(quote(value, bindersPassed))
       case Value.* => Term.*
       case Value.Nat => Term.Nat
+      case Value.Zero => Term.Zero
+      case Value.Succ(term) => Term.Succ(quote(term, bindersPassed))
       case Value.Pi(argumentType, dependentResultType) =>
         val quotedArgumentType = quote(argumentType, bindersPassed)
         val quotedResultType = quote(dependentResultType.apply(Value.freeVariable(Name.Quote(bindersPassed))), bindersPassed + 1)

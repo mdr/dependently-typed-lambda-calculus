@@ -64,14 +64,24 @@ object Parser extends RegexParsers {
     case term ~ None => term
   }
 
-  lazy val maybeApplicationTerm: Parser[InferrableTerm] = simpleTerm ~ rep(argument) ^^ {
+  lazy val succ: Parser[InferrableTerm] = "Succ" ~> argument ^^ Succ
+
+  lazy val maybeApplicationTerm: Parser[InferrableTerm] = succ | simpleTerm ~ rep(argument) ^^ {
     case term ~ Nil => term
     case function ~ arguments => arguments.foldLeft(function)((curriedFunction, arg) => Application(curriedFunction, arg))
   }
 
   lazy val argument: Parser[CheckableTerm] = parenLambda | simpleTerm ^^ Inf
 
-  lazy val simpleTerm: Parser[InferrableTerm] = ("Nat" | "ℕ") ^^^ Nat | "*" ^^^ * | freeVariable | "(" ~> term <~ ")"
+  private def toNumberTerm(n: Int): InferrableTerm = n match {
+    case 0 => Term.Zero
+    case _ => Term.Succ(toNumberTerm(n - 1))
+  }
+
+  lazy val number: Parser[InferrableTerm] = """0|[1-9]\d*""".r ^^ { s => toNumberTerm(s.toInt) }
+
+  lazy val simpleTerm: Parser[InferrableTerm] =
+    number | ("Nat" | "ℕ") ^^^ Nat | "*" ^^^ * | freeVariable | "(" ~> term <~ ")"
 
   lazy val lambdaTerm: Parser[CheckableTerm] = (("\\" | "λ") ~> rep1(ident) <~ arrow) ~ (lambdaTerm | maybeFunctionType ^^ Inf) ^^ {
     case args ~ body => args.foldRight[CheckableTerm](body)((arg, body) => Lambda(body.substitute(arg, 0)))
@@ -101,6 +111,8 @@ object Parser extends RegexParsers {
       case Application(function, argument) => Application(function.substitute(name, i), argument.substitute(name, i))
       case Term.* => *
       case Nat => Nat
+      case Zero => Zero
+      case Succ(term) => Succ(term.substitute(name, i))
       case Pi(argumentType, resultType) => Pi(argumentType.substitute(name, i), resultType.substitute(name, i + 1))
     }
   }

@@ -12,6 +12,8 @@ object Substitutions {
       case Application(function, argument) => Application(function.substitute(i, replacement), argument.substitute(i, replacement))
       case Term.* => Term.*
       case Term.Nat => Term.Nat
+      case Term.Zero => Term.Zero
+      case Term.Succ(term) => Term.Succ(term.substitute(i, replacement))
       case Pi(argumentType, resultType) => Pi(argumentType.substitute(i, replacement), resultType.substitute(i + 1, replacement))
     }
   }
