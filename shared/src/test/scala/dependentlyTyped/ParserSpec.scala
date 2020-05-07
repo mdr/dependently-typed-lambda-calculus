@@ -1,10 +1,10 @@
 package dependentlyTyped
 
-import org.scalatest._
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
 import Term._
 
-class ParserSpec extends FlatSpec with Matchers {
+class ParserSpec extends AnyFlatSpec with Matchers {
 
   "Parsing" should "work" in {
     Parser.parseTerm("forall (x :: *) (y :: Nat) (z :: Vec x y) (a :: Fin y) . x")

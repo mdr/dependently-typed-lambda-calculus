@@ -24,6 +24,7 @@ object PrettyPrinter {
         val prettyPrintedArgument = maybeParens(parensForArg, prettyPrint(argument, nameSupplier))
         s"$prettyPrintedFunction $prettyPrintedArgument"
       case Term.* => "*"
+      case Term.Nat => "ℕ"
       case Term.Pi(argumentType, resultType) =>
         if (!containsBoundVariable(resultType, 0)) {
           prettyPrintFunctionType(argumentType, resultType, nameSupplier)
@@ -66,6 +67,7 @@ object PrettyPrinter {
     term match {
       case Term.Annotated(term, typ) => containsBoundVariable(term, n) || containsBoundVariable(typ, n)
       case Term.* => false
+      case Term.Nat => false
       case Term.Pi(argumentType, resultType) => containsBoundVariable(argumentType, n) || containsBoundVariable(resultType, n + 1)
       case Term.BoundVariable(m) => n == m
       case Term.FreeVariable(_) => false

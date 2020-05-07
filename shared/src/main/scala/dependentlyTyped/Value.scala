@@ -14,6 +14,8 @@ object Value {
 
   case object * extends Value
 
+  case object Nat extends Value
+
   case class Pi(argumentType: Value, dependentResultType: Value => Value) extends Value
 
   def freeVariable(name: Name): Value = Neutral(dependentlyTyped.Neutral.FreeVariable(name))

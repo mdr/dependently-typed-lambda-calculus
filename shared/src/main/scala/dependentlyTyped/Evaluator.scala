@@ -29,6 +29,7 @@ object Evaluator {
       case Term.Application(function, argument) => apply(eval(function, env), eval(argument, env))
       case Term.* => Value.*
       case Term.Pi(argumentType, resultType) => Value.Pi(eval(argumentType, env), value => eval(resultType, env.extendWith(value)))
+      case Term.Nat => Value.Nat
     }
 
   def eval(term: CheckableTerm, env: Environment): Value =
@@ -41,7 +42,7 @@ object Evaluator {
     function match {
       case Value.Lambda(function) => function(argument)
       case Value.Neutral(value) => Value.Neutral(Neutral.Application(value, argument))
-      case Value.* | Value.Pi(_, _) => throw new AssertionError(s"Should not be able to apply a value $function to an argument")
+      case Value.* | Value.Nat | Value.Pi(_, _) => throw new AssertionError(s"Cannot apply $function as a function")
     }
 
 }

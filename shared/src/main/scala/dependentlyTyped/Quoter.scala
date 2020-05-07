@@ -7,6 +7,7 @@ object Quoter {
       case Value.Lambda(function) => Term.Lambda(quote(function(Value.freeVariable(Name.Quote(bindersPassed))), bindersPassed + 1))
       case Value.Neutral(value) => Term.Inf(quote(value, bindersPassed))
       case Value.* => Term.*
+      case Value.Nat => Term.Nat
       case Value.Pi(argumentType, dependentResultType) =>
         val quotedArgumentType = quote(argumentType, bindersPassed)
         val quotedResultType = quote(dependentResultType.apply(Value.freeVariable(Name.Quote(bindersPassed))), bindersPassed + 1)

@@ -1,17 +1,17 @@
 package dependentlyTyped
 
-
 import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class PrettyPrinterSpec extends FlatSpec with Matchers {
+class PrettyPrinterSpec extends AnyFlatSpec with Matchers {
 
   it should "format function types" in {
     simpleCheck("a -> b")
     simpleCheck("a -> *")
     simpleCheck("a -> b -> c")
     simpleCheck("∀ (a :: *) . a -> b")
-    simpleCheck("∀ (a :: Nat) (b :: Bool) . b a")
+    simpleCheck("∀ (a :: ℕ) (b :: Bool) . b a")
     simpleCheck("∀ (a :: *) (b :: a) . b")
     simpleCheck("∀ (a :: *) (b :: a -> a) . b")
   }

@@ -13,6 +13,7 @@ lazy val foo = crossProject(JSPlatform, JVMPlatform).in(file(".")).
   settings(
     name := "dependently-typed-lambda-calculus",
     version := "0.1",
+    scalacOptions := Seq("-unchecked", "-deprecation"),
     libraryDependencies += "org.scala-lang.modules" %%% "scala-parser-combinators" % "1.1.2",
     libraryDependencies += "org.scalatest" %%% "scalatest" % "3.1.1" % "test",
   ).
@@ -24,6 +25,7 @@ lazy val foo = crossProject(JSPlatform, JVMPlatform).in(file(".")).
       "react-dom" -> "16.7.0"),
     scalaJSUseMainModuleInitializer := true,
     mainClass in Compile := Some("Main"),
+    scalacOptions := Seq("-unchecked", "-deprecation"),
     libraryDependencies += "com.github.japgolly.scalajs-react" %%% "core" % "1.6.0",
     libraryDependencies += "com.github.japgolly.scalajs-react" %%% "extra" % "1.6.0"
   )

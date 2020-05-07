@@ -50,6 +50,10 @@ object Term {
     override def freeVariables: Seq[Name] = body.freeVariables
   }
 
+  case object Nat extends InferrableTerm {
+    override def freeVariables: Seq[Name] = Seq.empty
+  }
+
 }
 
 object CheckableTerm {

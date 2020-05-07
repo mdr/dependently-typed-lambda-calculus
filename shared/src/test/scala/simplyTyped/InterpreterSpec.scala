@@ -1,9 +1,9 @@
 package simplyTyped
 
-import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class InterpreterSpec extends FlatSpec with Matchers {
+class InterpreterSpec extends AnyFlatSpec with Matchers {
 
   "Evaluating identity" should "work" in {
     val term = Parser.parseTerm("((λx -> x) :: a -> a) y")

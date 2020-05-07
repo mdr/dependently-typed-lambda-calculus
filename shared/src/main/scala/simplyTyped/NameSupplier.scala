@@ -1,6 +1,6 @@
 package simplyTyped
 
-case class NameSupplier(names: Seq[String] = "abcdefghijklmnopqrstuvwxyz".split("")) {
+case class NameSupplier(names: Seq[String] = "abcdefghijklmnopqrstuvwxyz".split("").toSeq) {
   def getName(avoid: Seq[String]): (String, NameSupplier) = {
     val availableNames = names.filterNot(avoid.contains)
     availableNames.head -> NameSupplier(availableNames.tail)

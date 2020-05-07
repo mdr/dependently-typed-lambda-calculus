@@ -71,7 +71,7 @@ object Parser extends RegexParsers {
 
   lazy val argument: Parser[CheckableTerm] = parenLambda | simpleTerm ^^ Inf
 
-  lazy val simpleTerm: Parser[InferrableTerm] = "*" ^^^ * | freeVariable | "(" ~> term <~ ")"
+  lazy val simpleTerm: Parser[InferrableTerm] = ("Nat" | "ℕ") ^^^ Nat | "*" ^^^ * | freeVariable | "(" ~> term <~ ")"
 
   lazy val lambdaTerm: Parser[CheckableTerm] = (("\\" | "λ") ~> rep1(ident) <~ arrow) ~ (lambdaTerm | maybeFunctionType ^^ Inf) ^^ {
     case args ~ body => args.foldRight[CheckableTerm](body)((arg, body) => Lambda(body.substitute(arg, 0)))
@@ -93,10 +93,14 @@ object Parser extends RegexParsers {
     def substitute(name: String, i: Int): InferrableTerm = term match {
       case Annotated(term, typ) => Annotated(term.substitute(name, i), typ)
       case BoundVariable(j) => BoundVariable(j)
-      case FreeVariable(Name.Global(variableName)) if variableName == name => BoundVariable(i)
-      case FreeVariable(name) => FreeVariable(name)
+      case FreeVariable(variableName) =>
+        variableName match {
+          case Name.Global(variableName) if variableName == name => BoundVariable(i)
+          case _ => FreeVariable(variableName)
+        }
       case Application(function, argument) => Application(function.substitute(name, i), argument.substitute(name, i))
       case Term.* => *
+      case Nat => Nat
       case Pi(argumentType, resultType) => Pi(argumentType.substitute(name, i), resultType.substitute(name, i + 1))
     }
   }
