@@ -16,11 +16,17 @@ object PrettyPrinter {
 
   def prettyPrint(term: InferrableTerm, nameSupplier: NameSupplier = NameSupplier()): String =
     term match {
-      case Term.Annotated(term, typ) => s"(${prettyPrint(term, nameSupplier)} :: ${prettyPrint(typ, nameSupplier)})"
+      case Term.Annotated(term, typ) =>
+        val needsParens = cond(term) {
+          case Term.Lambda(_) => true
+        }
+        s"${maybeParens(needsParens, prettyPrint(term, nameSupplier))} :: ${prettyPrint(typ, nameSupplier)}"
       case Term.BoundVariable(n) => n.toString
       case Term.FreeVariable(name) => prettyPrint(name)
       case Term.Application(function, argument) =>
         val parensForFunction = cond(function) {
+          case Term.Annotated(_, _) => true
+          case Term.Succ(_) => true
           case Term.Pi(_, _) => true
         }
         val parensForArg = cond(argument) {
@@ -157,7 +163,7 @@ object PrettyPrinter {
         val newBody = names.reverse.zipWithIndex.foldRight(ultimateBody) {
           case ((name, index), body) => body.substitute(index, Term.FreeVariable(Name.Global(name)))
         }
-        s"(λ${names.mkString(" ")} -> ${prettyPrint(newBody, newNameSupplier)})"
+        s"λ${names.mkString(" ")} -> ${prettyPrint(newBody, newNameSupplier)}"
     }
 
   private def getFreeVariables(ultimateBody: CheckableTerm): Seq[String] =

@@ -6,6 +6,12 @@ import org.scalatest.matchers.should.Matchers
 
 class PrettyPrinterSpec extends AnyFlatSpec with Matchers {
 
+  it should "format annotations" in {
+    simpleCheck("a :: *")
+    simpleCheck("42 :: ℕ")
+    simpleCheck("(λa -> a) :: a -> a")
+  }
+
   it should "format function types" in {
     simpleCheck("a -> b")
     simpleCheck("a -> *")
@@ -36,7 +42,7 @@ class PrettyPrinterSpec extends AnyFlatSpec with Matchers {
 
     val prettyPrinted = PrettyPrinter.prettyPrint(term)
 
-    prettyPrinted shouldEqual "((λb a -> b (b a)) :: a)"
+    prettyPrinted shouldEqual "(λb a -> b (b a)) :: a"
     Parser.parseTerm(prettyPrinted) shouldEqual term
   }
 
