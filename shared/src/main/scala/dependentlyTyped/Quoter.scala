@@ -20,6 +20,7 @@ object Quoter {
     neutral match {
       case Neutral.FreeVariable(name) => boundFree(name, bindersPassed)
       case Neutral.Application(function, value) => Term.Application(quote(function, bindersPassed), quote(value, bindersPassed))
+      case Neutral.NatElim(motive, zeroCase, succCase, n) => Term.NatElim(quote(motive, bindersPassed), quote(zeroCase, bindersPassed), quote(succCase, bindersPassed), quote(n, bindersPassed))
     }
 
   private def boundFree(name: Name, bindersPassed: Int): InferrableTerm = name match {

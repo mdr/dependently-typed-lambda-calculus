@@ -42,7 +42,6 @@ object Parser extends RegexParsers {
 
   lazy val assumeStatement: Parser[Statement.Assume] = ("assume" ~> rep1(assumption)) ^^ Statement.Assume
 
-
   lazy val term: Parser[InferrableTerm] = piTerm | maybeAnnotatedTerm
 
   lazy val maybeAnnotatedTerm: Parser[InferrableTerm] =
@@ -64,9 +63,13 @@ object Parser extends RegexParsers {
     case term ~ None => term
   }
 
-  lazy val succ: Parser[InferrableTerm] = "Succ" ~> argument ^^ Succ
+  lazy val natElim: Parser[NatElim] = "natElim_" ~> argument ~ argument ~ argument ~ argument ^^ {
+    case motive ~ zeroCase ~ succCase ~ n => NatElim(motive, zeroCase, succCase, n)
+  }
 
-  lazy val maybeApplicationTerm: Parser[InferrableTerm] = succ | simpleTerm ~ rep(argument) ^^ {
+  lazy val succ: Parser[Succ] = "Succ" ~> argument ^^ Succ
+
+  lazy val maybeApplicationTerm: Parser[InferrableTerm] = natElim | succ | simpleTerm ~ rep(argument) ^^ {
     case term ~ Nil => term
     case function ~ arguments => arguments.foldLeft(function)((curriedFunction, arg) => Application(curriedFunction, arg))
   }
@@ -83,9 +86,10 @@ object Parser extends RegexParsers {
   lazy val simpleTerm: Parser[InferrableTerm] =
     number | ("Nat" | "ℕ") ^^^ Nat | "*" ^^^ * | freeVariable | "(" ~> term <~ ")"
 
-  lazy val lambdaTerm: Parser[CheckableTerm] = (("\\" | "λ") ~> rep1(ident) <~ arrow) ~ (lambdaTerm | maybeFunctionType ^^ Inf) ^^ {
-    case args ~ body => args.foldRight[CheckableTerm](body)((arg, body) => Lambda(body.substitute(arg, 0)))
-  }
+  lazy val lambdaTerm: Parser[CheckableTerm] =
+    (("\\" | "λ") ~> rep1(ident) <~ arrow) ~ (lambdaTerm | maybeFunctionType ^^ Inf) ^^ {
+      case args ~ body => args.foldRight[CheckableTerm](body)((arg, body) => Lambda(body.substitute(arg, 0)))
+    }
 
   // (x :: *)
   lazy val piArg: Parser[(String, InferrableTerm)] = (("(" ~> ident) <~ "::") ~ term <~ ")" ^^ {
@@ -113,6 +117,7 @@ object Parser extends RegexParsers {
       case Nat => Nat
       case Zero => Zero
       case Succ(term) => Succ(term.substitute(name, i))
+      case NatElim(motive, zeroCase, succCase, n) => NatElim(motive.substitute(name, i), zeroCase.substitute(name, i), succCase.substitute(name, i), n.substitute(name, i))
       case Pi(argumentType, resultType) => Pi(argumentType.substitute(name, i), resultType.substitute(name, i + 1))
     }
   }

@@ -34,4 +34,6 @@ object Neutral {
 
   case class Application(function: Neutral, argument: Value) extends Neutral
 
+  case class NatElim(motive: Value, zeroCase: Value, succCase: Value, n: Neutral) extends Neutral
+
 }

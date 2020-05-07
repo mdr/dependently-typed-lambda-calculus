@@ -14,6 +14,7 @@ object Substitutions {
       case Term.Nat => Term.Nat
       case Term.Zero => Term.Zero
       case Term.Succ(term) => Term.Succ(term.substitute(i, replacement))
+      case Term.NatElim(motive, zeroCase, succCase, n) => Term.NatElim(motive.substitute(i, replacement), zeroCase.substitute(i, replacement), succCase.substitute(i, replacement), n.substitute(i, replacement))
       case Pi(argumentType, resultType) => Pi(argumentType.substitute(i, replacement), resultType.substitute(i + 1, replacement))
     }
   }

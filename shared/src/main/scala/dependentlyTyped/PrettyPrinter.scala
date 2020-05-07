@@ -7,6 +7,13 @@ import scala.annotation.tailrec
 
 object PrettyPrinter {
 
+  private def count(term: InferrableTerm): Option[Int] =
+    term match {
+      case Term.Zero => Some(0)
+      case Term.Succ(Term.Inf(subterm)) => count(subterm).map(_ + 1)
+      case _ => None
+    }
+
   def prettyPrint(term: InferrableTerm, nameSupplier: NameSupplier = NameSupplier()): String =
     term match {
       case Term.Annotated(term, typ) => s"(${prettyPrint(term, nameSupplier)} :: ${prettyPrint(typ, nameSupplier)})"
@@ -28,15 +35,14 @@ object PrettyPrinter {
       case Term.* => "*"
       case Term.Nat => "ℕ"
       case Term.Zero => "0"
-      case Term.Succ(term) =>
-        val parensForArg = cond(term) {
-          case Term.Inf(Term.Application(_, _)) => true
-          case Term.Inf(Term.Annotated(_, _)) => true
-          case Term.Inf(Term.Succ(_)) => true
-          case Term.Inf(Term.Pi(_, _)) => true
-          case Term.Lambda(_) => true
+      case Term.Succ(subTerm) =>
+        count(term) match {
+          case Some(n) => n.toString
+          case None =>
+            s"Succ ${prettyPrintWithParensIfNeeded(subTerm, nameSupplier)}"
         }
-        s"Succ ${maybeParens(parensForArg, prettyPrint(term, nameSupplier))}"
+      case Term.NatElim(motive, zeroCase, succCase, n) =>
+        s"natElim ${prettyPrintWithParensIfNeeded(motive, nameSupplier)} ${prettyPrintWithParensIfNeeded(zeroCase, nameSupplier)} ${prettyPrintWithParensIfNeeded(succCase, nameSupplier)} ${prettyPrintWithParensIfNeeded(n, nameSupplier)})"
       case Term.Pi(argumentType, resultType) =>
         if (!containsBoundVariable(resultType, 0)) {
           prettyPrintFunctionType(argumentType, resultType, nameSupplier)
@@ -44,6 +50,20 @@ object PrettyPrinter {
           prettyPrintPiType(term, nameSupplier)
         }
     }
+
+  private def prettyPrintWithParensIfNeeded(subTerm: CheckableTerm, nameSupplier: NameSupplier) = {
+    maybeParens(needsParents(subTerm), prettyPrint(subTerm, nameSupplier))
+  }
+
+  private def needsParents(subTerm: CheckableTerm) = {
+    cond(subTerm) {
+      case Term.Inf(Term.Application(_, _)) => true
+      case Term.Inf(Term.Annotated(_, _)) => true
+      case Term.Inf(Term.Succ(_)) => true
+      case Term.Inf(Term.Pi(_, _)) => true
+      case Term.Lambda(_) => true
+    }
+  }
 
   private def prettyPrintPiType(term: InferrableTerm, nameSupplier: NameSupplier): String = {
     val PiCollectorResult(traversedPis, ultimateResultType, newNameSupplier) = collectPis(term, nameSupplier)
@@ -86,6 +106,7 @@ object PrettyPrinter {
       case Term.Application(function, argument) => containsBoundVariable(function, n) || containsBoundVariable(argument, n)
       case Term.Zero => false
       case Term.Succ(term) => containsBoundVariable(term, n)
+      case Term.NatElim(motive, zeroCase, succCase, num) => containsBoundVariable(motive, n) || containsBoundVariable(zeroCase, n) || containsBoundVariable(succCase, n) || containsBoundVariable(num, n)
     }
 
   case class TraversedPi(argumentName: String, argType: CheckableTerm)

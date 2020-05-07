@@ -21,4 +21,6 @@ object InterpreterMain extends App {
     }
   }
 
+  // let add = natElim (λ_ -> Nat -> Nat) (λn -> n) (λp rec n -> Succ (rec n))
+
 }

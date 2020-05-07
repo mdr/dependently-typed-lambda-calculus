@@ -32,6 +32,16 @@ object Evaluator {
       case Term.Nat => Value.Nat
       case Term.Zero => Value.Zero
       case Term.Succ(subterm) => Value.Succ(eval(subterm, env))
+      case Term.NatElim(motive, zeroCase, succCase, n) =>
+        val zeroValue = eval(zeroCase, env)
+        val succValue = eval(succCase, env)
+        def rec(value: Value): Value = value match {
+          case Value.Zero => zeroValue
+          case Value.Succ(subValue) => apply(apply(succValue, subValue), rec(subValue))
+          case Value.Neutral(neutral) => Value.Neutral(Neutral.NatElim(eval(motive, env), zeroValue, succValue, neutral))
+          case _ => throw new AssertionError(s"NatElim error: $value")
+        }
+        rec(eval(n, env))
     }
 
   def eval(term: CheckableTerm, env: Environment): Value =
@@ -40,7 +50,7 @@ object Evaluator {
       case Term.Lambda(body) => Value.Lambda(argument => eval(body, env.extendWith(argument)))
     }
 
-  private def apply(function: Value, argument: Value): Value =
+  def apply(function: Value, argument: Value): Value =
     function match {
       case Value.Lambda(function) => function(argument)
       case Value.Neutral(value) => Value.Neutral(Neutral.Application(value, argument))

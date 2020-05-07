@@ -43,6 +43,16 @@ object TypeChecker {
         for {
           _ <- checkType(term, Value.Nat, Γ, environment, bindersPassed)
         } yield Value.Nat
+      case Term.NatElim(motive, zeroCase, succCase, n) =>
+        for {
+          _ <- checkType(motive, Value.Pi(Value.Nat, _ => Value.*), Γ, environment, bindersPassed)
+          motiveValue = Evaluator.eval(motive, environment)
+          _ <- checkType(zeroCase, Evaluator.apply(motiveValue, Value.Zero), Γ, environment, bindersPassed)
+          expectedSuccCaseType = Value.Pi(Value.Nat, l => Value.Pi(Evaluator.apply(motiveValue, l), _ => Evaluator.apply(motiveValue, Value.Succ(l))))
+          _ <- checkType(succCase, expectedSuccCaseType, Γ, environment, bindersPassed)
+          _ <- checkType(n, Value.Nat, Γ, environment, bindersPassed)
+          nValue = Evaluator.eval(n, environment)
+        } yield Evaluator.apply(motiveValue, nValue)
       case Pi(argumentType, resultType) =>
         for {
           _ <- checkType(argumentType, Value.*, Γ, environment, bindersPassed)

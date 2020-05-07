@@ -21,10 +21,12 @@ case class InterpreterMonad[A](f: InterpreterState => (InterpreterState, A)) {
 
 object InterpreterState {
 
-  val initial: InterpreterState = InterpreterState()
+  val empty: InterpreterState = InterpreterState()
+
+  val initial: InterpreterState = empty.interpret(
+    "let natElim = (λm mz ms k -> natElim_ m mz ms k) :: ∀ (m :: Nat -> *) . m 0 -> (∀ (l :: Nat) . m l -> m (Succ l)) -> ∀ (k :: Nat) . m k")
 
 }
-
 
 
 sealed trait InterpreterResult {
@@ -32,6 +34,7 @@ sealed trait InterpreterResult {
 }
 
 object InterpreterResult {
+
   case class Assumption(name: String, typ: Type)
 
   type InterpreterOutcome = Either[String, InterpreterResult]
@@ -42,8 +45,8 @@ object InterpreterResult {
 
 }
 
-
 case class InterpreterState(letBindings: Map[String, Value] = Map.empty, assumptions: Map[String, Type] = Map.empty) {
+
   def merge(that: InterpreterState): InterpreterState = copy(letBindings = this.letBindings ++ that.letBindings, assumptions = this.assumptions ++ that.assumptions)
 
   val Γ: Context = assumptions.foldLeft(Context.empty) { case (context, (name, info)) => context.withGlobal(name, info) }
@@ -56,6 +59,10 @@ case class InterpreterState(letBindings: Map[String, Value] = Map.empty, assumpt
 
   def assume(name: String, typ: Type): InterpreterState = copy(assumptions = assumptions + (name -> typ))
 
+  def interpret(statement: String): InterpreterState = {
+    val (newState, Right(_)) = Interpreter.interpret(statement)(this)
+    newState
+  }
 }
 
 object Interpreter {

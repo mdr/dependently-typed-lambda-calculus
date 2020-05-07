@@ -54,6 +54,10 @@ object Term {
     override def freeVariables: Seq[Name] = term.freeVariables
   }
 
+  case class NatElim(motive: CheckableTerm, zeroCase: CheckableTerm, succCase: CheckableTerm, n: CheckableTerm) extends InferrableTerm {
+    override def freeVariables: Seq[Name] = motive.freeVariables ++ zeroCase.freeVariables ++ succCase.freeVariables ++ n.freeVariables
+  }
+
   case class Inf(term: InferrableTerm) extends CheckableTerm {
     override def freeVariables: Seq[Name] = term.freeVariables
   }
