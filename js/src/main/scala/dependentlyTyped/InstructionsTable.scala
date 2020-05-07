@@ -14,11 +14,11 @@ object InstructionsTable {
           ),
           <.tr(
             <.td("Define a variable"),
-            <.td(<.code("""let two = (\a f x -> f (f x)) :: forall (a :: *) . (a -> a) -> (a -> a)""")),
+            <.td(<.code("""let add = natElim (\_ -> Nat -> Nat) (\n -> n) (\_ rec n -> Succ (rec n))""")),
           ),
           <.tr(
             <.td("Evaluate an expression"),
-            <.td(<.code("""two String (\x -> x)""")),
+            <.td(<.code("""add 1 2""")),
           )
         ),
       )

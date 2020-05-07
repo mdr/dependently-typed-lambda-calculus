@@ -17,11 +17,11 @@ object App {
       <.p("Github repo: ", <.a(^.href := "https://github.com/mdr/dependently-typed-lambda-calculus", "https://github.com/mdr/dependently-typed-lambda-calculus")),
       <.ul(^.`class` := "nav nav-tabs", ^.id := "appTab",
         <.li(^.`class` := "nav-item",
-          <.a(^.`class` := "nav-link active", ^.id := "simply-tab", ^.href := "#simply", dataToggle := "tab", "Simply-typed")),
+          <.a(^.`class` := "nav-link", ^.id := "simply-tab", ^.href := "#simply", dataToggle := "tab", "Simply-typed")),
         <.li(^.`class` := "nav-item",
-          <.a(^.`class` := "nav-link", ^.id := "dependently-tab", ^.href := "#dependently", dataToggle := "tab", "Dependently-typed"))),
+          <.a(^.`class` := "nav-link active", ^.id := "dependently-tab", ^.href := "#dependently", dataToggle := "tab", "Dependently-typed"))),
       <.div(^.`class` := "tab-content", ^.id := "appTabContent",
-        <.div(^.`class` := "tab-pane fade show active", ^.id := "simply", SimplyTypedTab.simplyTypedTab()),
-        <.div(^.`class` := "tab-pane fade", ^.id := "dependently", DependentlyTypedTab.dependentlyTypedTab())
+        <.div(^.`class` := "tab-pane fade", ^.id := "simply", SimplyTypedTab.simplyTypedTab()),
+        <.div(^.`class` := "tab-pane fade show active", ^.id := "dependently", DependentlyTypedTab.dependentlyTypedTab())
       )))
 }

@@ -20,7 +20,9 @@ object PrettyPrinter {
         val needsParens = cond(term) {
           case Term.Lambda(_) => true
         }
-        s"${maybeParens(needsParens, prettyPrint(term, nameSupplier))} :: ${prettyPrint(typ, nameSupplier)}"
+        val prettyPrintedSubterm = maybeParens(needsParens, prettyPrint(term, nameSupplier))
+        val prettyPrintedType = prettyPrint(typ, nameSupplier)
+        s"${prettyPrintedSubterm} :: ${prettyPrintedType}"
       case Term.BoundVariable(n) => n.toString
       case Term.FreeVariable(name) => prettyPrint(name)
       case Term.Application(function, argument) =>

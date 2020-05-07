@@ -67,7 +67,7 @@ object Parser extends RegexParsers {
     case motive ~ zeroCase ~ succCase ~ n => NatElim(motive, zeroCase, succCase, n)
   }
 
-  lazy val succ: Parser[Succ] = "Succ" ~> argument ^^ Succ
+  lazy val succ: Parser[Succ] = "Succ_" ~> argument ^^ Succ
 
   lazy val maybeApplicationTerm: Parser[InferrableTerm] = natElim | succ | simpleTerm ~ rep(argument) ^^ {
     case term ~ Nil => term
@@ -84,7 +84,7 @@ object Parser extends RegexParsers {
   lazy val number: Parser[InferrableTerm] = """0|[1-9]\d*""".r ^^ { s => toNumberTerm(s.toInt) }
 
   lazy val simpleTerm: Parser[InferrableTerm] =
-    number | ("Nat" | "ℕ") ^^^ Nat | "*" ^^^ * | freeVariable | "(" ~> term <~ ")"
+    "Zero" ^^^ Zero | number | ("Nat" | "ℕ") ^^^ Nat | "*" ^^^ * | freeVariable | "(" ~> term <~ ")"
 
   lazy val lambdaTerm: Parser[CheckableTerm] =
     (("\\" | "λ") ~> rep1(ident) <~ arrow) ~ (lambdaTerm | maybeFunctionType ^^ Inf) ^^ {

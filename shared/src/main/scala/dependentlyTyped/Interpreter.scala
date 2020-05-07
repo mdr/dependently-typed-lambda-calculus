@@ -18,17 +18,6 @@ case class InterpreterMonad[A](f: InterpreterState => (InterpreterState, A)) {
 
 }
 
-
-object InterpreterState {
-
-  val empty: InterpreterState = InterpreterState()
-
-  val initial: InterpreterState = empty.interpret(
-    "let natElim = (λm mz ms k -> natElim_ m mz ms k) :: ∀ (m :: Nat -> *) . m 0 -> (∀ (l :: Nat) . m l -> m (Succ l)) -> ∀ (k :: Nat) . m k")
-
-}
-
-
 sealed trait InterpreterResult {
   val newInterpreterState: InterpreterState
 }
@@ -42,6 +31,16 @@ object InterpreterResult {
   case class Evaluated(name: String, value: Value, typ: Type, newInterpreterState: InterpreterState) extends InterpreterResult
 
   case class Assume(assumptions: Seq[Assumption], newInterpreterState: InterpreterState) extends InterpreterResult
+
+}
+
+object InterpreterState {
+
+  val empty: InterpreterState = InterpreterState()
+
+  val initial: InterpreterState = empty
+    .interpret("let Succ = (λn -> Succ_ n) :: Nat -> Nat")
+    .interpret("let natElim = (λm mz ms k -> natElim_ m mz ms k) :: ∀ (m :: Nat -> *) . m 0 -> (∀ (l :: Nat) . m l -> m (Succ_ l)) -> ∀ (k :: Nat) . m k")
 
 }
 
@@ -70,18 +69,16 @@ object Interpreter {
   def interpret(s: String): InterpreterMonad[Either[String, InterpreterResult]] = InterpreterMonad(interpreterState => {
     val resultEither = interpret(s, interpreterState)
 
-    val newInterpreterState = resultEither match {
-      case Left(_) => interpreterState
-      case Right(result) => result.newInterpreterState
+    try {
+      val newInterpreterState = resultEither match {
+        case Left(_) => interpreterState
+        case Right(result) => result.newInterpreterState
+      }
+      newInterpreterState -> resultEither
+    } catch {
+      case e: Throwable => interpreterState -> Left(s"Error: ${e.getMessage}")
     }
-    newInterpreterState -> resultEither
   })
-
-  def eval(name: String): InterpreterMonad[CheckableTerm] =
-    for {
-      resultEither <- interpret(name)
-      Right(InterpreterResult.Evaluated(_, value, _, _)) = resultEither
-    } yield Quoter.quote(value)
 
   private def interpret(s: String, state: InterpreterState): Either[String, InterpreterResult] = {
     for {
