@@ -90,4 +90,8 @@ class ParserSpec extends AnyFlatSpec with Matchers {
     term shouldEqual Pi(Inf(*), Inf(Pi(Inf(BoundVariable(0)), Inf(BoundVariable(1)))))
   }
 
+  it should "thing" in {
+    Parser.parseTerm("""natElim a b c d e""".stripMargin)
+  }
+
 }

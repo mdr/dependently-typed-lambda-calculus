@@ -26,7 +26,7 @@ object Evaluator {
       case Term.FreeVariable(Name.Global(name)) => env(name) getOrElse Value.freeVariable(Name.Global(name))
       case Term.FreeVariable(name) => Value.freeVariable(name)
       case Term.BoundVariable(n) => env(n) getOrElse (throw new AssertionError(s"Could not find binding for variable $n"))
-      case Term.Application(function, argument) => apply(eval(function, env), eval(argument, env))
+      case Term.Application(function, argument) => eval(function, env)(eval(argument, env))
       case Term.* => Value.*
       case Term.Pi(argumentType, resultType) => Value.Pi(eval(argumentType, env), value => eval(resultType, env.extendWith(value)))
       case Term.Nat => Value.Nat
@@ -38,7 +38,7 @@ object Evaluator {
 
         def rec(value: Value): Value = value match {
           case Value.Zero => zeroValue
-          case Value.Succ(subValue) => apply(apply(succValue, subValue), rec(subValue))
+          case Value.Succ(subValue) => succValue(subValue)(rec(subValue))
           case Value.Neutral(neutral) => Value.Neutral(Neutral.NatElim(eval(motive, env), zeroValue, succValue, neutral))
           case _ => throw new AssertionError(s"NatElim error: $value")
         }
@@ -47,6 +47,18 @@ object Evaluator {
       case Term.Nil(elementType) => Value.Nil(eval(elementType, env))
       case Term.Cons(elementType, length, head, tail) => Value.Cons(eval(elementType, env), eval(length, env), eval(head, env), eval(tail, env))
       case Term.Vec(elementType, length) => Value.Vec(eval(elementType, env), eval(length, env))
+      case Term.VecElim(elementType, motive, nilCase, consCase, length, vector) =>
+        val evaluatedNilCase = eval(nilCase, env)
+        val evaluatedConsCase = eval(consCase, env)
+
+        def rec(length: Value, vector: Value): Value = vector match {
+          case Value.Nil(_) => evaluatedNilCase
+          case Value.Cons(_, length, head, tail) => evaluatedConsCase(length)(head)(tail)(rec(length, tail))
+          case Value.Neutral(neutral) => Value.Neutral(Neutral.VecElim(eval(elementType, env), eval(motive, env), evaluatedNilCase, evaluatedConsCase, length, neutral))
+          case _ => throw new AssertionError(s"VecElim error: $vector")
+        }
+
+        rec(eval(length, env), eval(vector, env))
     }
 
   def eval(term: CheckableTerm, env: Environment): Value =

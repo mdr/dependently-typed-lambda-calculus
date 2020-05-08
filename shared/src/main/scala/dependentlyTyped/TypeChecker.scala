@@ -31,15 +31,15 @@ object TypeChecker {
             case Value.Pi(argumentType, dependentResultType) =>
               for {
                 _ <- checkType(argument, argumentType, Γ, environment, bindersPassed)
-              } yield dependentResultType(Evaluator.eval(argument, Environment.empty))
+              } yield dependentResultType(Evaluator.eval(argument, environment))
             case _ => throwError(s"Value of type $functionType is not a valid function")
           }
         } yield resultType
       case BoundVariable(_) => throwError("Unexpected Bound term in type checking")
       case Term.* => Right(Value.*)
-      case Term.Nat => Right(Value.*)
-      case Term.Zero => Right(Value.Nat)
-      case Term.Succ(term) =>
+      case Nat => Right(Value.*)
+      case Zero => Right(Value.Nat)
+      case Succ(term) =>
         for {
           _ <- checkType(term, Value.Nat, Γ, environment, bindersPassed)
         } yield Value.Nat
@@ -53,35 +53,54 @@ object TypeChecker {
           _ <- checkType(n, Value.Nat, Γ, environment, bindersPassed)
           nValue = Evaluator.eval(n, environment)
         } yield Evaluator.apply(motiveValue, nValue)
-      case Term.Nil(elementType) =>
+      case Nil(elementType) =>
         for {
           _ <- checkType(elementType, Value.*, Γ, environment, bindersPassed)
-          evaluatedElementType = Evaluator.eval(elementType, Environment.empty)
+          evaluatedElementType = Evaluator.eval(elementType, environment)
         } yield Value.Vec(evaluatedElementType, Value.Zero)
-      case Term.Cons(elementType, length, head, tail) =>
+      case Cons(elementType, length, head, tail) =>
         for {
           _ <- checkType(elementType, Value.*, Γ, environment, bindersPassed)
           _ <- checkType(length, Value.Nat, Γ, environment, bindersPassed)
-          evaluatedElementType = Evaluator.eval(elementType, Environment.empty)
-          evaluatedLength = Evaluator.eval(length, Environment.empty)
+          evaluatedElementType = Evaluator.eval(elementType, environment)
+          evaluatedLength = Evaluator.eval(length, environment)
           _ <- checkType(head, evaluatedElementType, Γ, environment, bindersPassed)
           _ <- checkType(tail, Value.Vec(evaluatedElementType, evaluatedLength), Γ, environment, bindersPassed)
         } yield Value.Vec(evaluatedElementType, Value.Succ(evaluatedLength))
-      case Term.Vec(elementType, length) =>
+      case Vec(elementType, length) =>
         for {
           _ <- checkType(elementType, Value.*, Γ, environment, bindersPassed)
           _ <- checkType(length, Value.Nat, Γ, environment, bindersPassed)
         } yield Value.*
+      case VecElim(elementType, motive, nilCase, consCase, length, vector) =>
+        for {
+          _ <- checkType(elementType, Value.*, Γ, environment, bindersPassed)
+          evaluatedElementType = Evaluator.eval(elementType, environment)
+          expectedMotiveType = Value.Pi(Value.Nat, length => Value.Pi(Value.Vec(evaluatedElementType, length), _ => Value.*))
+          _ <- checkType(motive, expectedMotiveType, Γ, environment, bindersPassed)
+          evaluatedMotive = Evaluator.eval(motive, environment)
+          expectedNilCaseType = evaluatedMotive(Value.Zero)(Value.Nil(evaluatedElementType))
+          _ <- checkType(nilCase, expectedNilCaseType, Γ, environment, bindersPassed)
+          expectedConsCaseType = Value.Pi(Value.Nat, l =>
+            Value.Pi(evaluatedElementType, y =>
+              Value.Pi(Value.Vec(evaluatedElementType, l), ys =>
+                Value.Pi(evaluatedMotive(l)(ys), _ =>
+                  evaluatedMotive(Value.Succ(l))(Value.Cons(evaluatedElementType, l, y, ys))))))
+          _ <- checkType(consCase, expectedConsCaseType, Γ, environment, bindersPassed)
+          _ <- checkType(length, Value.Nat, Γ, environment, bindersPassed)
+          evaluatedLength = Evaluator.eval(length, environment)
+          _ <- checkType(vector, Value.Vec(evaluatedElementType, evaluatedLength), Γ, environment, bindersPassed)
+          evaluatedVector = Evaluator.eval(vector, environment)
+        } yield evaluatedMotive(evaluatedLength)(evaluatedVector)
       case Pi(argumentType, resultType) =>
         for {
           _ <- checkType(argumentType, Value.*, Γ, environment, bindersPassed)
-          evaluatedArgumentType = Evaluator.eval(argumentType, Environment.empty)
+          evaluatedArgumentType = Evaluator.eval(argumentType, environment)
           freshName = Name.Local(bindersPassed)
           substitutedTerm = resultType.substitute(0, FreeVariable(freshName))
           _ <- checkType(substitutedTerm, Value.*, Γ.withLocalType(bindersPassed, evaluatedArgumentType), environment, bindersPassed + 1)
         } yield Value.*
     }
-
 
   @tailrec
   def checkType(term: CheckableTerm, expectedType: Type, Γ: Context, environment: Environment, bindersPassed: Int): Result[Unit] =

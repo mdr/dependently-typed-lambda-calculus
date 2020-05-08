@@ -63,26 +63,32 @@ object Parser extends RegexParsers {
     case term ~ None => term
   }
 
-  lazy val natElim: Parser[NatElim] = "natElim_" ~> argument ~ argument ~ argument ~ argument ^^ {
+  lazy val natElim: Parser[NatElim] = "natElim" ~> argument ~ argument ~ argument ~ argument ^^ {
     case motive ~ zeroCase ~ succCase ~ n => NatElim(motive, zeroCase, succCase, n)
   }
 
-  lazy val succ: Parser[Succ] = "Succ_" ~> argument ^^ Succ
+  lazy val succ: Parser[Succ] = "Succ" ~> argument ^^ Succ
 
-  lazy val nil: Parser[Nil] = "Nil_" ~> argument ^^ Nil
+  lazy val nil: Parser[Nil] = "Nil" ~> argument ^^ Nil
 
-  lazy val cons: Parser[Cons] = "Cons_" ~> argument ~ argument ~ argument ~ argument ^^ {
+  lazy val cons: Parser[Cons] = "Cons" ~> argument ~ argument ~ argument ~ argument ^^ {
     case elementType ~ length ~ head ~ tail => Cons(elementType, length, head, tail)
   }
 
-  lazy val vec: Parser[Vec] = "Vec_" ~> argument ~ argument ^^ {
+  lazy val vec: Parser[Vec] = "Vec" ~> argument ~ argument ^^ {
     case elementType ~ length => Vec(elementType, length)
   }
 
-  lazy val maybeApplicationTerm: Parser[InferrableTerm] = nil | cons | vec | natElim | succ | simpleTerm ~ rep(argument) ^^ {
-    case term ~ List() => term
-    case function ~ arguments => arguments.foldLeft(function)((curriedFunction, arg) => Application(curriedFunction, arg))
+  lazy val vecElim: Parser[VecElim] = "vecElim" ~> argument ~ argument ~ argument ~ argument ~ argument ~ argument ^^ {
+    case elementType ~ motive ~ nilCase ~ consCase ~ length ~ vector =>
+      VecElim(elementType, motive, nilCase, consCase, length, vector)
   }
+
+  lazy val maybeApplicationTerm: Parser[InferrableTerm] =
+    (nil | cons | vec | vecElim | natElim | succ | simpleTerm) ~ rep(argument) ^^ {
+      case term ~ List() => term
+      case function ~ arguments => arguments.foldLeft(function)((curriedFunction, arg) => Application(curriedFunction, arg))
+    }
 
   lazy val argument: Parser[CheckableTerm] = parenLambda | simpleTerm ^^ Inf
 
@@ -97,7 +103,7 @@ object Parser extends RegexParsers {
     "Zero" ^^^ Zero | number | ("Nat" | "ℕ") ^^^ Nat | "*" ^^^ * | freeVariable | "(" ~> term <~ ")"
 
   lazy val lambdaTerm: Parser[CheckableTerm] =
-    (("\\" | "λ") ~> rep1(ident) <~ arrow) ~ (lambdaTerm | maybeFunctionType ^^ Inf) ^^ {
+    (("\\" | "λ") ~> rep1(ident) <~ arrow) ~ (lambdaTerm | piTerm ^^ Inf | maybeFunctionType ^^ Inf) ^^ {
       case args ~ body => args.foldRight[CheckableTerm](body)((arg, body) => Lambda(body.substitute(arg, 0)))
     }
 
@@ -106,8 +112,12 @@ object Parser extends RegexParsers {
     case arg ~ argumentType => arg -> argumentType
   }
 
+  lazy val nakedPiArg: Parser[List[(String, InferrableTerm)]] = (ident <~ "::") ~ term ^^ {
+    case arg ~ argumentType => List(arg -> argumentType)
+  }
+
   // forall (x :: *) (y :: Nat) (z :: Vec x y) (a :: Fin y) . x
-  lazy val piTerm: Parser[InferrableTerm] = (("∀" | "forall") ~> rep1(piArg) <~ ".") ~ term ^^ {
+  lazy val piTerm: Parser[InferrableTerm] = (("∀" | "forall") ~> (rep1(piArg) | nakedPiArg) <~ ".") ~ term ^^ {
     case piArgs ~ resultType =>
       piArgs.foldRight[InferrableTerm](resultType) { case ((arg, argumentType), body) => Pi(argumentType, body.substitute(arg, 0)) }
   }
@@ -131,6 +141,8 @@ object Parser extends RegexParsers {
       case Nil(elementType) => Nil(elementType.substitute(name, i))
       case Cons(elementType, length, head, tail) => Cons(elementType.substitute(name, i), length.substitute(name, i), head.substitute(name, i), tail.substitute(name, i))
       case Vec(elementType, length) => Vec(elementType.substitute(name, i), length.substitute(name, i))
+      case VecElim(elementType, motive, nilCase, consCase, length, vector) =>
+        VecElim(elementType.substitute(name, i), motive.substitute(name, i), nilCase.substitute(name, i), consCase.substitute(name, i), length.substitute(name, i), vector.substitute(name, i))
       case Pi(argumentType, resultType) => Pi(argumentType.substitute(name, i), resultType.substitute(name, i + 1))
     }
   }

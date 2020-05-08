@@ -32,12 +32,22 @@ object PrettyPrinter {
           case Term.Annotated(_, _) => true
           case Term.Succ(_) if !isNum(function) => true
           case Term.Pi(_, _) => true
+          case Term.Nil(_) => true
+          case Term.Cons(_, _, _, _) => true
+          case Term.Vec(_, _) => true
+          case Term.NatElim(_, _, _, _) => true
+          case Term.VecElim(_, _, _, _,  _, _) => true
         }
         val parensForArg = cond(argument) {
           case Term.Inf(Term.Application(_, _)) => true
           case Term.Inf(Term.Annotated(_, _)) => true
-          case Term.Inf(succ @ Term.Succ(_)) if !isNum(succ) => true
+          case Term.Inf(succ@Term.Succ(_)) if !isNum(succ) => true
           case Term.Inf(Term.Pi(_, _)) => true
+          case Term.Inf(Term.Nil(_)) => true
+          case Term.Inf(Term.Cons(_, _, _, _)) => true
+          case Term.Inf(Term.Vec(_, _)) => true
+          case Term.Inf(Term.NatElim(_, _, _, _)) => true
+          case Term.Inf(Term.VecElim(_, _, _, _,  _, _)) => true
         }
         val prettyPrintedFunction = maybeParens(parensForFunction, prettyPrint(function, nameSupplier))
         val prettyPrintedArgument = maybeParens(parensForArg, prettyPrint(argument, nameSupplier))
@@ -69,6 +79,14 @@ object PrettyPrinter {
         val prettyPrintedElementType = s"${prettyPrintWithParensIfNeeded(elementType, nameSupplier)}"
         val prettyPrintedLength = s"${prettyPrintWithParensIfNeeded(length, nameSupplier)}"
         s"Vec $prettyPrintedElementType $prettyPrintedLength"
+      case Term.VecElim(elementType, motive, nilCase, consCase, length, vector) =>
+        val prettyPrintedElementType = s"${prettyPrintWithParensIfNeeded(elementType, nameSupplier)}"
+        val prettyPrintedMotive = s"${prettyPrintWithParensIfNeeded(motive, nameSupplier)}"
+        val prettyPrintedNilCase = s"${prettyPrintWithParensIfNeeded(nilCase, nameSupplier)}"
+        val prettyPrintedConsCase = s"${prettyPrintWithParensIfNeeded(consCase, nameSupplier)}"
+        val prettyPrintedLength = s"${prettyPrintWithParensIfNeeded(length, nameSupplier)}"
+        val prettyPrintedVector = s"${prettyPrintWithParensIfNeeded(vector, nameSupplier)}"
+        s"vecElim $prettyPrintedElementType $prettyPrintedMotive $prettyPrintedNilCase $prettyPrintedConsCase $prettyPrintedLength $prettyPrintedVector"
       case Term.Pi(argumentType, resultType) =>
         if (!containsBoundVariable(resultType, 0)) {
           prettyPrintFunctionType(argumentType, resultType, nameSupplier)
@@ -78,15 +96,20 @@ object PrettyPrinter {
     }
 
   private def prettyPrintWithParensIfNeeded(subTerm: CheckableTerm, nameSupplier: NameSupplier) = {
-    maybeParens(needsParents(subTerm), prettyPrint(subTerm, nameSupplier))
+    maybeParens(needsParens(subTerm), prettyPrint(subTerm, nameSupplier))
   }
 
-  private def needsParents(subTerm: CheckableTerm) = {
+  private def needsParens(subTerm: CheckableTerm) = {
     cond(subTerm) {
       case Term.Inf(Term.Application(_, _)) => true
       case Term.Inf(Term.Annotated(_, _)) => true
-      case Term.Inf(succ @ Term.Succ(_)) => !isNum(succ)
+      case Term.Inf(succ@Term.Succ(_)) => !isNum(succ)
       case Term.Inf(Term.Pi(_, _)) => true
+      case Term.Inf(Term.Nil(_)) => true
+      case Term.Inf(Term.Cons(_, _, _, _)) => true
+      case Term.Inf(Term.Vec(_, _)) => true
+      case Term.Inf(Term.NatElim(_, _, _, _)) => true
+      case Term.Inf(Term.VecElim(_, _, _, _,  _, _)) => true
       case Term.Lambda(_) => true
     }
   }
@@ -136,6 +159,8 @@ object PrettyPrinter {
       case Term.Nil(elementType) => containsBoundVariable(elementType, n)
       case Term.Cons(elementType, length, head, tail) => containsBoundVariable(elementType, n) || containsBoundVariable(length, n) || containsBoundVariable(head, n) || containsBoundVariable(tail, n)
       case Term.Vec(elementType, length) => containsBoundVariable(elementType, n) || containsBoundVariable(length, n)
+      case Term.VecElim(elementType, motive, nilCase, consCase, length, vector) =>
+        containsBoundVariable(elementType, n) || containsBoundVariable(motive, n) || containsBoundVariable(nilCase, n) || containsBoundVariable(consCase, n) || containsBoundVariable(length, n) || containsBoundVariable(vector, n)
     }
 
   case class TraversedPi(argumentName: String, argType: CheckableTerm)

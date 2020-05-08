@@ -24,6 +24,8 @@ object Quoter {
       case Neutral.FreeVariable(name) => boundFree(name, bindersPassed)
       case Neutral.Application(function, value) => Term.Application(quote(function, bindersPassed), quote(value, bindersPassed))
       case Neutral.NatElim(motive, zeroCase, succCase, n) => Term.NatElim(quote(motive, bindersPassed), quote(zeroCase, bindersPassed), quote(succCase, bindersPassed), quote(n, bindersPassed))
+      case Neutral.VecElim(elementType, motive, nilCase, consCase, length, vector) =>
+        Term.VecElim(quote(elementType, bindersPassed), quote(motive, bindersPassed), quote(nilCase, bindersPassed), quote(consCase, bindersPassed), quote(length, bindersPassed), quote(vector, bindersPassed))
     }
 
   private def boundFree(name: Name, bindersPassed: Int): InferrableTerm = name match {

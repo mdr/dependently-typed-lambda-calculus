@@ -70,6 +70,10 @@ object Term {
     override def freeVariables: Seq[Name] = elementType.freeVariables ++ length.freeVariables ++ head.freeVariables ++ tail.freeVariables
   }
 
+  case class VecElim(elementType: CheckableTerm, motive: CheckableTerm, nilCase: CheckableTerm, consCase: CheckableTerm, length: CheckableTerm, vector: CheckableTerm) extends InferrableTerm {
+    override def freeVariables: Seq[Name] = elementType.freeVariables ++ motive.freeVariables ++ nilCase.freeVariables ++ consCase.freeVariables ++ length.freeVariables ++ vector.freeVariables
+  }
+
   case class Inf(term: InferrableTerm) extends CheckableTerm {
     override def freeVariables: Seq[Name] = term.freeVariables
   }
