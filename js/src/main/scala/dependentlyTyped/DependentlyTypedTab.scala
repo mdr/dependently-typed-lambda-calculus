@@ -6,8 +6,8 @@ import japgolly.scalajs.react.vdom.html_<^._
 object DependentlyTypedTab {
 
   case class State(input: String = "",
-                           interpreterState: InterpreterState = InterpreterState.initial,
-                           history: Seq[HistoryEntry] = Seq.empty)
+                   interpreterState: InterpreterState = InterpreterState.prelude,
+                   history: Seq[HistoryEntry] = Seq.empty)
 
   val dependentlyTypedTab =
     ScalaComponent.builder[Unit]("App")
@@ -40,7 +40,6 @@ object DependentlyTypedTab {
         <.div(^.`class` := "btn-group", ^.role := "group",
           <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", dataToggle := "collapse", dataTarget := "#instructions-table", "Show/hide instructions"),
           <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", dataToggle := "collapse", dataTarget := "#bindings-table", "Show/hide bindings"),
-//          <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", "Add Church Numerals", ^.onClick --> onAddChurchNumeralsPressed),
           <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", "Reset", ^.onClick --> onReset),
         ),
         <.p(),
@@ -62,15 +61,7 @@ object DependentlyTypedTab {
         InterpreterOutcomeView.interpreterOutcomeView(result).unless(input.isEmpty))
     }
 
-    private def onReset: Callback =
-      $.setState(State())
-//
-//    private def onAddChurchNumeralsPressed: Callback =
-//      $.modState { oldState =>
-//        val State(_, interpreterState, _) = oldState
-//        val newInterpreterState = interpreterState merge Examples.churchNumeralsInterpreterState
-//        oldState.copy(interpreterState = newInterpreterState)
-//      }
+    private def onReset: Callback = $.setState(State())
 
     private def onEvaluatePressed: Callback =
       $.modState { oldState =>

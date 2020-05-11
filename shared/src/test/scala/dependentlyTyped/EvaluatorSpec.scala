@@ -14,7 +14,11 @@ class EvaluatorSpec extends AnyFlatSpec with Matchers {
     check("pred 0", "0")
     check("pred 2", "1")
     check("inc 2", "3")
-
+    check("replicate 2 Nat 42", "Cons ℕ 1 42 (Cons ℕ 0 42 (Nil ℕ))")
+    check("replicate' Nat 2 42", "Cons ℕ 1 42 (Cons ℕ 0 42 (Nil ℕ))")
+    check("fromto 2", "Cons ℕ 1 1 (Cons ℕ 0 0 (Nil ℕ))")
+    check("fromto 3", "Cons ℕ 2 2 (Cons ℕ 1 1 (Cons ℕ 0 0 (Nil ℕ)))")
+    check("append Nat 2 (fromto 2) 3 (fromto 3)", "Cons ℕ 4 1 (Cons ℕ 3 0 (Cons ℕ 2 2 (Cons ℕ 1 1 (Cons ℕ 0 0 (Nil ℕ)))))")
   }
 
   private def check(expression: String, expected: String) = eval(expected) shouldEqual eval(expression)

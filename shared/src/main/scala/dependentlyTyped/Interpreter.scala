@@ -87,14 +87,36 @@ object InterpreterState {
         |     (forall n :: Nat . m (Succ (Succ n)) -> m (Succ (Succ (Succ n)))) ->
         |     forall (n :: Nat) . m n""".stripMargin)
     .interpret("""let inc = natFold Nat (Succ Zero) Succ""")
-//    .interpret(
-//      """let finNat = finElim (\ _ _ -> Nat)
-//        |                     (\ _ -> Zero)
-//        |                     (\ _ _ rec -> Succ rec)""".stripMargin)
+    .interpret(
+      """let replicate =
+        |  ( natElim
+        |      ( \ n -> forall (a :: *) . a -> Vec a n )
+        |      ( \ a _ -> Nil a )
+        |      ( \ n' rec_n' a x -> Cons a n' x (rec_n' a x) ) )
+        |  :: forall (n :: Nat) . forall (a :: *) . a -> Vec a n""".stripMargin)
+    .interpret(
+      """let replicate' =
+        |  (\ a n x -> natElim (Vec a)
+        |                      (Nil a)
+        |                      (\ n' rec_n' -> Cons a n' x rec_n') n)
+        |  :: forall (a :: *) (n :: Nat) . a -> Vec a n""".stripMargin)
+    .interpret(
+      """let fromto =
+        |  natElim
+        |    ( \ n -> Vec Nat n )
+        |    ( Nil Nat )
+        |    ( \ n' rec_n' -> Cons Nat n' n' rec_n' )""".stripMargin)
+    .interpret(
+      """let append =
+        |  ( \ a -> vecElim a
+        |             (\ m _ -> forall (n :: Nat) . Vec a n -> Vec a (plus m n))
+        |             (\ _ v -> v)
+        |             (\ m v vs rec n w -> Cons a (plus m n) v (rec n w)))
+        |  ::  forall (a :: *) (m :: Nat) (v :: Vec a m) (n :: Nat) (w :: Vec a n).
+        |      Vec a (plus m n)
+        |""".stripMargin)
   //    .interpret("""""")
   //    .interpret("""""")
-
-
 }
 
 case class InterpreterState(letBindings: Map[String, Value] = Map.empty, assumptions: Map[String, Type] = Map.empty) {
