@@ -54,6 +54,7 @@ object PrettyPrinter {
           case Term.Inf(Term.Fin(_)) => true
           case Term.Inf(Term.FZero(_)) => true
           case Term.Inf(Term.FSucc(_, _)) => true
+          case Term.Lambda(_) => true
         }
         val prettyPrintedFunction = maybeParens(parensForFunction, prettyPrint(function, nameSupplier))
         val prettyPrintedArgument = maybeParens(parensForArg, prettyPrint(argument, nameSupplier))
