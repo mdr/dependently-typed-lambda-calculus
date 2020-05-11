@@ -49,6 +49,9 @@ object InterpreterState {
         | ∀ (a :: *) (m :: (forall (k :: Nat) . Vec a k -> *)) . m 0 (Nil a)
         | -> (forall (l :: Nat) (x :: a) (xs :: Vec a l) . m l xs -> m (Succ l) (Cons a l x xs))
         | -> forall (k :: Nat) (xs :: Vec a k) . m k xs """.stripMargin)
+    .interpret("let Fin = (λn -> Fin n) :: Nat -> *")
+    .interpret("let FZero = (λn -> FZero n) :: ∀ (n :: Nat) . Fin (Succ n)")
+    .interpret("let FSucc = (λn f -> FSucc n f) :: ∀ (n :: Nat) . Fin n -> Fin (Succ n)")
 
   val prelude: InterpreterState = initial
     .interpret("""let id = (\ a x -> x) :: forall (a :: *) . a -> a""")

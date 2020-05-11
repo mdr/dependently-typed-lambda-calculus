@@ -59,6 +59,9 @@ object Evaluator {
         }
 
         rec(eval(length, env), eval(vector, env))
+      case Term.Fin(n) => Value.Fin(eval(n, env))
+      case Term.FZero(n) => Value.FZero(eval(n, env))
+      case Term.FSucc(n, term) => Value.FSucc(eval(n, env), eval(term, env))
     }
 
   def eval(term: CheckableTerm, env: Environment): Value =
@@ -71,7 +74,7 @@ object Evaluator {
     function match {
       case Value.Lambda(function) => function(argument)
       case Value.Neutral(value) => Value.Neutral(Neutral.Application(value, argument))
-      case Value.Nil(_) | Value.Cons(_, _, _, _) | Value.Vec(_, _) | Value.Zero | Value.Succ(_) | Value.* | Value.Nat | Value.Pi(_, _) =>
+      case Value.Fin(_) | Value.FZero(_) | Value.FSucc(_, _) | Value.Nil(_) | Value.Cons(_, _, _, _) | Value.Vec(_, _) | Value.Zero | Value.Succ(_) | Value.* | Value.Nat | Value.Pi(_, _) =>
         throw new AssertionError(s"Cannot apply $function as a function")
     }
 

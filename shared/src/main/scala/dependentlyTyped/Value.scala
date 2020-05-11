@@ -4,7 +4,7 @@ sealed trait Value {
 
   override def toString: String = Quoter.quote(this).toString
 
-  def apply(argument: Value) = Evaluator.apply(this, argument)
+  def apply(argument: Value): Type = Evaluator.apply(this, argument)
 
 }
 
@@ -27,6 +27,12 @@ object Value {
   case class Cons(elementType: Value, length: Value, head: Value, tail: Value) extends Value
 
   case class Vec(elementType: Value, length: Value) extends Value
+
+  case class Fin(n: Value) extends Value
+
+  case class FZero(n: Value) extends Value
+
+  case class FSucc(n: Value, value: Value) extends Value
 
   case class Pi(argumentType: Value, dependentResultType: Value => Value) extends Value
 

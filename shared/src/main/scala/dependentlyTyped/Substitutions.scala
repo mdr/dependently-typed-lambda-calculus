@@ -20,6 +20,9 @@ object Substitutions {
       case Vec(elementType, length) => Vec(elementType.substitute(i, replacement), length.substitute(i, replacement))
       case VecElim(elementType, motive, nilCase, consCase, length, vector) =>
         VecElim(elementType.substitute(i, replacement), motive.substitute(i, replacement), nilCase.substitute(i, replacement), consCase.substitute(i, replacement), length.substitute(i, replacement), vector.substitute(i, replacement))
+      case Fin(n) => Fin(n.substitute(i, replacement))
+      case FZero(n) => FZero(n.substitute(i, replacement))
+      case FSucc(n, term) => FSucc(n.substitute(i, replacement), term.substitute(i, replacement))
       case Pi(argumentType, resultType) => Pi(argumentType.substitute(i, replacement), resultType.substitute(i + 1, replacement))
     }
   }

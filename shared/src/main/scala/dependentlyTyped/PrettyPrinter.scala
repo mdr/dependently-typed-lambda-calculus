@@ -37,6 +37,9 @@ object PrettyPrinter {
           case Term.Vec(_, _) => true
           case Term.NatElim(_, _, _, _) => true
           case Term.VecElim(_, _, _, _,  _, _) => true
+          case Term.Fin(_) => true
+          case Term.FZero(_) => true
+          case Term.FSucc(_, _) => true
         }
         val parensForArg = cond(argument) {
           case Term.Inf(Term.Application(_, _)) => true
@@ -48,6 +51,9 @@ object PrettyPrinter {
           case Term.Inf(Term.Vec(_, _)) => true
           case Term.Inf(Term.NatElim(_, _, _, _)) => true
           case Term.Inf(Term.VecElim(_, _, _, _,  _, _)) => true
+          case Term.Inf(Term.Fin(_)) => true
+          case Term.Inf(Term.FZero(_)) => true
+          case Term.Inf(Term.FSucc(_, _)) => true
         }
         val prettyPrintedFunction = maybeParens(parensForFunction, prettyPrint(function, nameSupplier))
         val prettyPrintedArgument = maybeParens(parensForArg, prettyPrint(argument, nameSupplier))
@@ -87,6 +93,14 @@ object PrettyPrinter {
         val prettyPrintedLength = s"${prettyPrintWithParensIfNeeded(length, nameSupplier)}"
         val prettyPrintedVector = s"${prettyPrintWithParensIfNeeded(vector, nameSupplier)}"
         s"vecElim $prettyPrintedElementType $prettyPrintedMotive $prettyPrintedNilCase $prettyPrintedConsCase $prettyPrintedLength $prettyPrintedVector"
+      case Term.Fin(n) =>
+        s"Fin ${prettyPrintWithParensIfNeeded(n, nameSupplier)}"
+      case Term.FZero(n) =>
+        s"FZero ${prettyPrintWithParensIfNeeded(n, nameSupplier)}"
+      case Term.FSucc(n, term) =>
+        val prettyPrintedN = s"${prettyPrintWithParensIfNeeded(n, nameSupplier)}"
+        val prettyPrintedTerm = s"${prettyPrintWithParensIfNeeded(term, nameSupplier)}"
+        s"FSucc $prettyPrintedN $prettyPrintedTerm"
       case Term.Pi(argumentType, resultType) =>
         if (!containsBoundVariable(resultType, 0)) {
           prettyPrintFunctionType(argumentType, resultType, nameSupplier)
@@ -110,6 +124,9 @@ object PrettyPrinter {
       case Term.Inf(Term.Vec(_, _)) => true
       case Term.Inf(Term.NatElim(_, _, _, _)) => true
       case Term.Inf(Term.VecElim(_, _, _, _,  _, _)) => true
+      case Term.Inf(Term.Fin(_)) => true
+      case Term.Inf(Term.FZero(_)) => true
+      case Term.Inf(Term.FSucc(_, _)) => true
       case Term.Lambda(_) => true
     }
   }
@@ -161,6 +178,9 @@ object PrettyPrinter {
       case Term.Vec(elementType, length) => containsBoundVariable(elementType, n) || containsBoundVariable(length, n)
       case Term.VecElim(elementType, motive, nilCase, consCase, length, vector) =>
         containsBoundVariable(elementType, n) || containsBoundVariable(motive, n) || containsBoundVariable(nilCase, n) || containsBoundVariable(consCase, n) || containsBoundVariable(length, n) || containsBoundVariable(vector, n)
+      case Term.Fin(m) => containsBoundVariable(m, n)
+      case Term.FZero(m) => containsBoundVariable(m, n)
+      case Term.FSucc(m, term) => containsBoundVariable(m, n) || containsBoundVariable(term, n)
     }
 
   case class TraversedPi(argumentName: String, argType: CheckableTerm)

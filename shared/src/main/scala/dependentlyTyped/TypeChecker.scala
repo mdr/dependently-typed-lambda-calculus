@@ -92,6 +92,21 @@ object TypeChecker {
           _ <- checkType(vector, Value.Vec(evaluatedElementType, evaluatedLength), Γ, environment, bindersPassed)
           evaluatedVector = Evaluator.eval(vector, environment)
         } yield evaluatedMotive(evaluatedLength)(evaluatedVector)
+      case Fin(n) =>
+        for {
+          _ <- checkType(n, Value.Nat, Γ, environment, bindersPassed)
+        } yield Value.*
+      case FZero(n) =>
+        for {
+          _ <- checkType(n, Value.Nat, Γ, environment, bindersPassed)
+          evaluatedN = Evaluator.eval(n, environment)
+        } yield Value.Fin(Value.Succ(evaluatedN))
+      case FSucc(n, term) =>
+        for {
+          _ <- checkType(n, Value.Nat, Γ, environment, bindersPassed)
+          evaluatedN = Evaluator.eval(n, environment)
+          _ <- checkType(term, Value.Fin(evaluatedN), Γ, environment, bindersPassed)
+        } yield Value.Fin(Value.Succ(evaluatedN))
       case Pi(argumentType, resultType) =>
         for {
           _ <- checkType(argumentType, Value.*, Γ, environment, bindersPassed)

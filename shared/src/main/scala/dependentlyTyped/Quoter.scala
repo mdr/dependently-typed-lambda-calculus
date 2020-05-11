@@ -17,6 +17,9 @@ object Quoter {
         val quotedArgumentType = quote(argumentType, bindersPassed)
         val quotedResultType = quote(dependentResultType.apply(Value.freeVariable(Name.Quote(bindersPassed))), bindersPassed + 1)
         Term.Pi(quotedArgumentType, quotedResultType)
+      case Value.Fin(n) => Term.Fin(quote(n, bindersPassed))
+      case Value.FZero(n) => Term.FZero(quote(n, bindersPassed))
+      case Value.FSucc(n, term) => Term.FSucc(quote(n, bindersPassed), quote(term, bindersPassed))
     }
 
   private def quote(neutral: Neutral, bindersPassed: Int): InferrableTerm =
