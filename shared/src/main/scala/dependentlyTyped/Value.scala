@@ -52,4 +52,6 @@ object Neutral {
 
   case class VecElim(elementType: Value, motive: Value, nilCase: Value, consCase: Value, length: Value, vector: Neutral) extends Neutral
 
+  case class FinElim(motive: Value, zeroCase: Value, succCase: Value, n: Value, fin: Neutral) extends Neutral
+
 }

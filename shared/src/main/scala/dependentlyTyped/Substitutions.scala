@@ -23,6 +23,8 @@ object Substitutions {
       case Fin(n) => Fin(n.substitute(i, replacement))
       case FZero(n) => FZero(n.substitute(i, replacement))
       case FSucc(n, term) => FSucc(n.substitute(i, replacement), term.substitute(i, replacement))
+      case FinElim(motive, zeroCase, succCase, n, fin) =>
+        FinElim(motive.substitute(i, replacement), zeroCase.substitute(i, replacement), succCase.substitute(i, replacement), n.substitute(i, replacement), fin.substitute(i, replacement))
       case Pi(argumentType, resultType) => Pi(argumentType.substitute(i, replacement), resultType.substitute(i + 1, replacement))
     }
   }

@@ -107,6 +107,12 @@ object TypeChecker {
           evaluatedN = Evaluator.eval(n, environment)
           _ <- checkType(term, Value.Fin(evaluatedN), Γ, environment, bindersPassed)
         } yield Value.Fin(Value.Succ(evaluatedN))
+      case FinElim(motive, zeroCase, succCase, n, fin) =>
+//        val expectedMotiveType = Value.Pi(Value.Nat, length => Value.Pi(Value.Vec(evaluatedElementType, length), _ => Value.*))
+//        for {
+//          _ <- checkType(motive, expectedMotiveType, Γ, environment, bindersPassed)
+//        } yield Value.*
+        ???
       case Pi(argumentType, resultType) =>
         for {
           _ <- checkType(argumentType, Value.*, Γ, environment, bindersPassed)
@@ -123,7 +129,7 @@ object TypeChecker {
       case Inf(term) =>
         for {
           inferredType <- inferType(term, Γ, environment, bindersPassed)
-          _ <- if (Quoter.quote(inferredType) == Quoter.quote(expectedType)) Right(()) else throwError(s"Type mismatch. Expected type '${Quoter.quote(expectedType)}', but was inferred as '${Quoter.quote(inferredType)}'.")
+          _ <- if (Quoter.quote(inferredType) == Quoter.quote(expectedType)) Right(()) else throwError(s"Type mismatch for '$term'. Expected type '${Quoter.quote(expectedType)}', but was inferred as '${Quoter.quote(inferredType)}'.")
         } yield ()
       case Lambda(body) => expectedType match {
         case Value.Pi(argumentType, dependentResultType) =>

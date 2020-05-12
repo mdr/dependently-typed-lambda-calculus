@@ -92,8 +92,12 @@ object Parser extends RegexParsers {
     case elementType ~ length => FSucc(elementType, length)
   }
 
+  lazy val finElim: Parser[FinElim] = "finElim" ~> argument ~ argument ~ argument ~ argument ~ argument ^^ {
+    case motive ~ zeroCase ~ succCase ~ n ~ fin => FinElim(motive, zeroCase, succCase, n, fin)
+  }
+
   lazy val maybeApplicationTerm: Parser[InferrableTerm] =
-    (fin | fZero | fSucc | nil | cons | vec | vecElim | natElim | succ | simpleTerm) ~ rep(argument) ^^ {
+    (finElim | fin | fZero | fSucc | nil | cons | vec | vecElim | natElim | succ | simpleTerm) ~ rep(argument) ^^ {
       case term ~ List() => term
       case function ~ arguments => arguments.foldLeft(function)((curriedFunction, arg) => Application(curriedFunction, arg))
     }
@@ -155,6 +159,8 @@ object Parser extends RegexParsers {
       case Fin(n) => Fin(n.substitute(name, i))
       case FZero(n) => FZero(n.substitute(name, i))
       case FSucc(n, term) => FSucc(n.substitute(name, i), term.substitute(name, i))
+      case FinElim(motive, zeroCase, succCase, n, fin) =>
+        VecElim(motive.substitute(name, i), motive.substitute(name, i), zeroCase.substitute(name, i), succCase.substitute(name, i), n.substitute(name, i), fin.substitute(name, i))
     }
   }
 

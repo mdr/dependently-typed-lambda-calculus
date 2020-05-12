@@ -33,13 +33,13 @@ object Evaluator {
       case Term.Zero => Value.Zero
       case Term.Succ(subterm) => Value.Succ(eval(subterm, env))
       case Term.NatElim(motive, zeroCase, succCase, n) =>
-        val zeroValue = eval(zeroCase, env)
-        val succValue = eval(succCase, env)
+        val evaluatedZeroCase = eval(zeroCase, env)
+        val evaluatedSuccCase = eval(succCase, env)
 
         def rec(value: Value): Value = value match {
-          case Value.Zero => zeroValue
-          case Value.Succ(subValue) => succValue(subValue)(rec(subValue))
-          case Value.Neutral(neutral) => Value.Neutral(Neutral.NatElim(eval(motive, env), zeroValue, succValue, neutral))
+          case Value.Zero => evaluatedZeroCase
+          case Value.Succ(subValue) => evaluatedSuccCase(subValue)(rec(subValue))
+          case Value.Neutral(neutral) => Value.Neutral(Neutral.NatElim(eval(motive, env), evaluatedZeroCase, evaluatedSuccCase, neutral))
           case _ => throw new AssertionError(s"NatElim error: $value")
         }
 
@@ -59,6 +59,18 @@ object Evaluator {
         }
 
         rec(eval(length, env), eval(vector, env))
+      case Term.FinElim(motive, zeroCase, succCase, n, fin) =>
+        val evaluatedZeroCase = eval(zeroCase, env)
+        val evaluatedSuccCase = eval(succCase, env)
+
+        def rec(n: Value, fin: Value): Value = fin match {
+          case Value.FZero(n) => evaluatedZeroCase(n)
+          case Value.FSucc(n, value) => evaluatedSuccCase(n)(value)(rec(n, value))
+          case Value.Neutral(neutral) => Value.Neutral(Neutral.FinElim(eval(motive, env), evaluatedZeroCase, evaluatedSuccCase, n, neutral))
+          case _ => throw new AssertionError(s"FinElim error: $fin")
+        }
+
+        rec(eval(n, env), eval(fin, env))
       case Term.Fin(n) => Value.Fin(eval(n, env))
       case Term.FZero(n) => Value.FZero(eval(n, env))
       case Term.FSucc(n, term) => Value.FSucc(eval(n, env), eval(term, env))

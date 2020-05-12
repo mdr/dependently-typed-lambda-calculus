@@ -86,6 +86,10 @@ object Term {
     override def freeVariables: Seq[Name] = n.freeVariables ++ term.freeVariables
   }
 
+  case class FinElim(motive: CheckableTerm,  zeroCase: CheckableTerm, succCase: CheckableTerm, n: CheckableTerm, fin: CheckableTerm) extends InferrableTerm {
+    override def freeVariables: Seq[Name] = motive.freeVariables ++ zeroCase.freeVariables ++ succCase.freeVariables ++ n.freeVariables ++ fin.freeVariables
+  }
+
   case class Inf(term: InferrableTerm) extends CheckableTerm {
     override def freeVariables: Seq[Name] = term.freeVariables
   }
