@@ -32,7 +32,7 @@ object TypeChecker {
               for {
                 _ <- checkType(argument, argumentType, Γ, environment, bindersPassed)
               } yield dependentResultType(Evaluator.eval(argument, environment))
-            case _ => throwError(s"Value of type $functionType is not a valid function")
+            case _ => throwError(s"Value of type '$functionType' is not a valid function ('$function' applied to '$argument')")
           }
         } yield resultType
       case BoundVariable(_) => throwError("Unexpected Bound term in type checking")
@@ -108,11 +108,14 @@ object TypeChecker {
           _ <- checkType(term, Value.Fin(evaluatedN), Γ, environment, bindersPassed)
         } yield Value.Fin(Value.Succ(evaluatedN))
       case FinElim(motive, zeroCase, succCase, n, fin) =>
-//        val expectedMotiveType = Value.Pi(Value.Nat, length => Value.Pi(Value.Vec(evaluatedElementType, length), _ => Value.*))
-//        for {
-//          _ <- checkType(motive, expectedMotiveType, Γ, environment, bindersPassed)
-//        } yield Value.*
-        ???
+        val expectedMotiveType = Value.Pi(Value.Nat, n => Value.Pi(Value.Fin(n), _ => Value.*))
+        for {
+          _ <- checkType(motive, expectedMotiveType, Γ, environment, bindersPassed)
+          evaluatedMotive = Evaluator.eval(motive, environment)
+          _ <- checkType(n, Value.Nat, Γ, environment, bindersPassed)
+          evaluatedN = Evaluator.eval(n, environment)
+          evaluatedFin = Evaluator.eval(fin, environment)
+        } yield evaluatedMotive(evaluatedN)(evaluatedFin)
       case Pi(argumentType, resultType) =>
         for {
           _ <- checkType(argumentType, Value.*, Γ, environment, bindersPassed)

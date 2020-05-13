@@ -160,7 +160,7 @@ object Parser extends RegexParsers {
       case FZero(n) => FZero(n.substitute(name, i))
       case FSucc(n, term) => FSucc(n.substitute(name, i), term.substitute(name, i))
       case FinElim(motive, zeroCase, succCase, n, fin) =>
-        VecElim(motive.substitute(name, i), motive.substitute(name, i), zeroCase.substitute(name, i), succCase.substitute(name, i), n.substitute(name, i), fin.substitute(name, i))
+        FinElim(motive.substitute(name, i), zeroCase.substitute(name, i), succCase.substitute(name, i), n.substitute(name, i), fin.substitute(name, i))
     }
   }
 

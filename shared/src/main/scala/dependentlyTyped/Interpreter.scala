@@ -52,8 +52,7 @@ object InterpreterState {
     .interpret("let Fin = (λn -> Fin n) :: Nat -> *")
     .interpret("let FZero = (λn -> FZero n) :: ∀ (n :: Nat) . Fin (Succ n)")
     .interpret("let FSucc = (λn f -> FSucc n f) :: ∀ (n :: Nat) . Fin n -> Fin (Succ n)")
-//    .interpret("let finElim = (λm mz ms k f -> finElim m mz ms k f) :: ∀ (m :: ∀ (n :: Nat) . Fin n -> *) . (∀ n :: Nat . m (Succ n) (FZero n)) -> (∀ (n :: Nat) (f :: Fin n) . m n f -> m (Succ n) (FSucc n f)) -> ∀ (n :: Nat) (f :: Fin n) . m n f")
-//    .interpret("let finElim = (\m mz ms k f -> finElim m mz ms k f) :: forall (m :: forall (n :: Nat) . Fin n -> *) . (forall n :: Nat . m (Succ n) (FZero n)) -> (forall (n :: Nat) (f :: Fin n) . m n f -> m (Succ n) (FSucc n f)) -> forall (n :: Nat) (f :: Fin n) . m n f")
+    .interpret("let finElim = (λm mz ms k f -> finElim m mz ms k f) :: ∀ (m :: ∀ (n :: Nat) . Fin n -> *) . (∀ n :: Nat . m (Succ n) (FZero n)) -> (∀ (n :: Nat) (f :: Fin n) . m n f -> m (Succ n) (FSucc n f)) -> ∀ (n :: Nat) (f :: Fin n) . m n f")
 
   val prelude: InterpreterState = initial
     .interpret("""let id = (\ a x -> x) :: forall (a :: *) . a -> a""")
@@ -120,8 +119,117 @@ object InterpreterState {
         |  ::  forall (a :: *) (m :: Nat) (v :: Vec a m) (n :: Nat) (w :: Vec a n).
         |      Vec a (plus m n)
         |""".stripMargin)
-  //    .interpret("""""")
-  //    .interpret("""""")
+    .interpret(
+      """let finNat = finElim (\ _ _ -> Nat)
+        |                     (\ _ -> Zero)
+        |                     (\ _ _ rec -> Succ rec)""".stripMargin)
+    .interpret("""let Unit = Fin 1""")
+    .interpret("""let U = FZero 0""".stripMargin)
+    .interpret(
+      """let unitElim =
+        |  ( \ m mu -> finElim ( nat1Elim (\ n -> Fin n -> *)
+        |                                 (\ _ -> Unit)
+        |                                 (\ x -> m x)
+        |                                 (\ _ _ _ -> Unit) )
+        |                      ( natElim (\ n -> natElim (\ n -> Fin (Succ n) -> *)
+        |                                                (\ x -> m x)
+        |                                                (\ _ _ _ -> Unit)
+        |                                                n (FZero n))
+        |                                mu
+        |                                (\ _ _ -> U) )
+        |                      ( \ n f _ -> finElim (\ n f -> natElim (\ n -> Fin (Succ n) -> *)
+        |                                                             (\ x -> m x)
+        |                                                             (\ _ _ _ -> Unit)
+        |                                                             n (FSucc n f))
+        |                                           (\ _ -> U)
+        |                                           (\ _ _ _ -> U)
+        |                                           n f )
+        |                      1 )
+        |  :: forall (m :: Unit -> *) . m U -> forall (u :: Unit) . m u
+        |""".stripMargin)
+    .interpret("""let Void = Fin 0""")
+    .interpret(
+      """let voidElim =
+        |  ( \ m -> finElim (natElim (\ n -> Fin n -> *)
+        |                            (\ x -> m x)
+        |                            (\ _ _ _ -> Unit))
+        |                   (\ _ -> U)
+        |                   (\ _ _ _ -> U)
+        |                   0 )
+        |  :: forall (m :: Void -> *) (v :: Void) . m v""".stripMargin)
+    .interpret("""let Bool = Fin 2""")
+    .interpret("""let False = FZero 1""")
+    .interpret("""let True  = FSucc 1 (FZero 0)""")
+    .interpret(
+      """let boolElim =
+        |  ( \ m mf mt -> finElim ( nat2Elim (\ n -> Fin n -> *)
+        |                                    (\ _ -> Unit) (\ _ -> Unit)
+        |                                    (\ x -> m x)
+        |                                    (\ _ _ _ -> Unit) )
+        |                         ( nat1Elim ( \ n -> nat1Elim (\ n -> Fin (Succ n) -> *)
+        |                                                      (\ _ -> Unit)
+        |                                                      (\ x -> m x)
+        |                                                      (\ _ _ _ -> Unit)
+        |                                                      n (FZero n))
+        |                                    U mf (\ _ _ -> U) )
+        |                         ( \ n f _ -> finElim ( \ n f -> nat1Elim (\ n -> Fin (Succ n) -> *)
+        |                                                                  (\ _ -> Unit)
+        |                                                                  (\ x -> m x)
+        |                                                                  (\ _ _ _ -> Unit)
+        |                                                                  n (FSucc n f) )
+        |                                              ( natElim
+        |                                                  ( \ n -> natElim
+        |                                                             (\ n -> Fin (Succ (Succ n)) -> *)
+        |                                                             (\ x -> m x)
+        |                                                             (\ _ _ _ -> Unit)
+        |                                                             n (FSucc (Succ n) (FZero n)) )
+        |                                                  mt (\ _ _ -> U) )
+        |                                              ( \ n f _ -> finElim
+        |                                                             (\ n f -> natElim
+        |                                                                         (\ n -> Fin (Succ (Succ n)) -> *)
+        |                                                                         (\ x -> m x)
+        |                                                                         (\ _ _ _ -> Unit)
+        |                                                                         n (FSucc (Succ n) (FSucc n f)))
+        |                                                             (\ _ -> U)
+        |                                                             (\ _ _ _ -> U)
+        |                                                             n f )
+        |                                              n f )
+        |                         2 )
+        |  :: forall (m :: Bool -> *) . m False -> m True -> forall (b :: Bool) . m b""".stripMargin)
+    .interpret("""let not = boolElim (\ _ -> Bool) True False""")
+    .interpret("""let and = boolElim (\ _ -> Bool -> Bool) (\ _ -> False) (id Bool)""")
+    .interpret("""let or  = boolElim (\ _ -> Bool -> Bool) (id Bool) (\ _ -> True)""")
+    .interpret("""let iff = boolElim (\ _ -> Bool -> Bool) not (id Bool)""")
+    .interpret("""let xor = boolElim (\ _ -> Bool -> Bool) (id Bool) not""")
+    .interpret("""let even    = natFold Bool True not""")
+    .interpret("""let odd     = natFold Bool False not""")
+    .interpret("""let isZero  = natFold Bool True (\ _ -> False)""")
+    .interpret("""let isSucc  = natFold Bool False (\ _ -> True)""")
+    .interpret(
+      """let natEq =
+        |  natElim
+        |    ( \ _ -> Nat -> Bool )
+        |    ( natElim
+        |        ( \ _ -> Bool )
+        |        True
+        |        ( \ n' _ -> False ) )
+        |    ( \ m' rec_m' -> natElim
+        |                       ( \ _ -> Bool )
+        |                       False
+        |                       ( \ n' _ -> rec_m' n' ))""".stripMargin)
+    .interpret("""let Prop = boolElim (\ _ -> *) Void Unit""")
+    .interpret(
+      """let pNatEqRefl =
+        |  natElim
+        |    (\ n -> Prop (natEq n n))
+        |    U
+        |    (\ n' rec -> rec)
+        |  :: forall (n :: Nat) . Prop (natEq n n)""".stripMargin)
+    .interpret("""let Not = (\ a -> a -> Void) :: * -> *""")
+//    .interpret("""""")
+//    .interpret("""""")
+//    .interpret("""""")
+//    .interpret("""""")
 }
 
 case class InterpreterState(letBindings: Map[String, Value] = Map.empty, assumptions: Map[String, Type] = Map.empty) {

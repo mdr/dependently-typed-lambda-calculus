@@ -22,5 +22,3 @@ object InterpreterMain extends App {
   }
 
 }
-// forall (m :: forall (n :: Nat) . Fin n -> *) . (forall n :: Nat . m (Succ n) (FZero n)) -> (forall (n :: Nat) (f :: Fin n) . m n f -> m (Succ n) (FSucc n f)) -> forall (n :: Nat) (f :: Fin n) . m n f
-// forall (m :: forall (n :: Nat) . Fin n -> *) . m 1 (FZero 0)
