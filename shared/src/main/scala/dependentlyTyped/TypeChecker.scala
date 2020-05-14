@@ -45,13 +45,22 @@ object TypeChecker {
         } yield Value.Nat
       case Term.NatElim(motive, zeroCase, succCase, n) =>
         for {
+          // m :: Nat -> *
           _ <- checkType(motive, Value.Pi(Value.Nat, _ => Value.*), Γ, environment, bindersPassed)
           motiveValue = Evaluator.eval(motive, environment)
+
+          // m :: Nat -> *
           _ <- checkType(zeroCase, Evaluator.apply(motiveValue, Value.Zero), Γ, environment, bindersPassed)
+
+          // ∀ (l :: Nat) . m l -> m (Succ l)
           expectedSuccCaseType = Value.Pi(Value.Nat, l => Value.Pi(Evaluator.apply(motiveValue, l), _ => Evaluator.apply(motiveValue, Value.Succ(l))))
           _ <- checkType(succCase, expectedSuccCaseType, Γ, environment, bindersPassed)
+
+          // k :: Nat
           _ <- checkType(n, Value.Nat, Γ, environment, bindersPassed)
           nValue = Evaluator.eval(n, environment)
+
+          // m k
         } yield Evaluator.apply(motiveValue, nValue)
       case Nil(elementType) =>
         for {
@@ -74,23 +83,36 @@ object TypeChecker {
         } yield Value.*
       case VecElim(elementType, motive, nilCase, consCase, length, vector) =>
         for {
+          // a :: *
           _ <- checkType(elementType, Value.*, Γ, environment, bindersPassed)
           evaluatedElementType = Evaluator.eval(elementType, environment)
+
+          // m :: (forall (k :: Nat) . Vec a k -> *)
           expectedMotiveType = Value.Pi(Value.Nat, length => Value.Pi(Value.Vec(evaluatedElementType, length), _ => Value.*))
           _ <- checkType(motive, expectedMotiveType, Γ, environment, bindersPassed)
           evaluatedMotive = Evaluator.eval(motive, environment)
+
+          // m 0 (Nil a)
           expectedNilCaseType = evaluatedMotive(Value.Zero)(Value.Nil(evaluatedElementType))
           _ <- checkType(nilCase, expectedNilCaseType, Γ, environment, bindersPassed)
+
+          // forall (l :: Nat) (x :: a) (xs :: Vec a l) . m l xs -> m (Succ l) (Cons a l x xs)
           expectedConsCaseType = Value.Pi(Value.Nat, l =>
-            Value.Pi(evaluatedElementType, y =>
-              Value.Pi(Value.Vec(evaluatedElementType, l), ys =>
-                Value.Pi(evaluatedMotive(l)(ys), _ =>
-                  evaluatedMotive(Value.Succ(l))(Value.Cons(evaluatedElementType, l, y, ys))))))
+            Value.Pi(evaluatedElementType, x =>
+              Value.Pi(Value.Vec(evaluatedElementType, l), xs =>
+                Value.Pi(evaluatedMotive(l)(xs), _ =>
+                  evaluatedMotive(Value.Succ(l))(Value.Cons(evaluatedElementType, l, x, xs))))))
           _ <- checkType(consCase, expectedConsCaseType, Γ, environment, bindersPassed)
+
+          // k :: Nat
           _ <- checkType(length, Value.Nat, Γ, environment, bindersPassed)
           evaluatedLength = Evaluator.eval(length, environment)
+
+          // xs :: Vec a k
           _ <- checkType(vector, Value.Vec(evaluatedElementType, evaluatedLength), Γ, environment, bindersPassed)
           evaluatedVector = Evaluator.eval(vector, environment)
+
+          //  m k xs
         } yield evaluatedMotive(evaluatedLength)(evaluatedVector)
       case Fin(n) =>
         for {
@@ -129,6 +151,8 @@ object TypeChecker {
           // f :: Fin n
           _ <- checkType(fin, Value.Fin(evaluatedN), Γ, environment, bindersPassed)
           evaluatedFin = Evaluator.eval(fin, environment)
+
+          // m n f
         } yield evaluatedMotive(evaluatedN)(evaluatedFin)
       case Pi(argumentType, resultType) =>
         for {
@@ -178,6 +202,8 @@ object TypeChecker {
           // e :: Eq a l r
           _ <- checkType(equality, Value.Eq(evaluatedType, evaluatedLeft, evaluatedRight), Γ, environment, bindersPassed)
           evaluatedEquality = Evaluator.eval(equality, environment)
+
+          // m l r e
         } yield evaluatedMotive(evaluatedLeft)(evaluatedRight)(evaluatedEquality)
     }
 
