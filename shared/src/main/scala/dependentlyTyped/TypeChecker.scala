@@ -108,12 +108,26 @@ object TypeChecker {
           _ <- checkType(term, Value.Fin(evaluatedN), Γ, environment, bindersPassed)
         } yield Value.Fin(Value.Succ(evaluatedN))
       case FinElim(motive, zeroCase, succCase, n, fin) =>
+        // m :: ∀ (n :: Nat) . Fin n -> *
         val expectedMotiveType = Value.Pi(Value.Nat, n => Value.Pi(Value.Fin(n), _ => Value.*))
         for {
           _ <- checkType(motive, expectedMotiveType, Γ, environment, bindersPassed)
           evaluatedMotive = Evaluator.eval(motive, environment)
+
+          // ∀ n :: Nat . m (Succ n) (FZero n)
+          expectedZeroCaseType = Value.Pi(Value.Nat, n => evaluatedMotive(Value.Succ(n))(Value.FZero(n)))
+          _ <- checkType(zeroCase, expectedZeroCaseType, Γ, environment, bindersPassed)
+
+          // ∀ (n :: Nat) (f :: Fin n) . m n f -> m (Succ n) (FSucc n f)
+          expectedSuccCase = Value.Pi(Value.Nat, n => Value.Pi(Value.Fin(n), f => Value.Pi(evaluatedMotive(n)(f), _ => evaluatedMotive(Value.Succ(n))(Value.FSucc(n, f)))))
+          _ <- checkType(succCase, expectedSuccCase, Γ, environment, bindersPassed)
+
+          // n :: Nat
           _ <- checkType(n, Value.Nat, Γ, environment, bindersPassed)
           evaluatedN = Evaluator.eval(n, environment)
+
+          // f :: Fin n
+          _ <- checkType(fin, Value.Fin(evaluatedN), Γ, environment, bindersPassed)
           evaluatedFin = Evaluator.eval(fin, environment)
         } yield evaluatedMotive(evaluatedN)(evaluatedFin)
       case Pi(argumentType, resultType) =>
@@ -140,17 +154,29 @@ object TypeChecker {
         } yield Value.Eq(evaluatedType, evaluatedValue, evaluatedValue)
       case EqElim(typ, motive, reflCase, left, right, equality) =>
         for {
-          _ <- checkType(typ, Value.*, Γ, environment, bindersPassed)
+          // a :: *
           _ <- checkType(typ, Value.*, Γ, environment, bindersPassed)
           evaluatedType = Evaluator.eval(typ, environment)
-          expectedMotiveType = Value.Pi(evaluatedType, x => Value.Pi(evaluatedType, y => Value.Pi(Value.Eq(evaluatedType, x, y), _ => Value.*)))
+
+          // m :: ∀ (l :: a) (r :: a) . (Eq a l r) -> *
+          expectedMotiveType = Value.Pi(evaluatedType, l => Value.Pi(evaluatedType, r => Value.Pi(Value.Eq(evaluatedType, l, r), _ => Value.*)))
           _ <- checkType(motive, expectedMotiveType, Γ, environment, bindersPassed)
           evaluatedMotive = Evaluator.eval(motive, environment)
-          // ...
+
+          // ∀ v :: a . m v v (Refl a v)
+          expectedReflCaseType = Value.Pi(evaluatedType, v => evaluatedMotive(v)(v)(Value.Refl(evaluatedType, v)))
+          _ <- checkType(reflCase, expectedReflCaseType, Γ, environment, bindersPassed)
+
+          // l :: a
           _ <- checkType(left, evaluatedType, Γ, environment, bindersPassed)
           evaluatedLeft = Evaluator.eval(left, environment)
+
+          // r :: a
           _ <- checkType(right, evaluatedType, Γ, environment, bindersPassed)
           evaluatedRight = Evaluator.eval(right, environment)
+
+          // e :: Eq a l r
+          _ <- checkType(equality, Value.Eq(evaluatedType, evaluatedLeft, evaluatedRight), Γ, environment, bindersPassed)
           evaluatedEquality = Evaluator.eval(equality, environment)
         } yield evaluatedMotive(evaluatedLeft)(evaluatedRight)(evaluatedEquality)
     }
