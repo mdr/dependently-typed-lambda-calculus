@@ -74,6 +74,15 @@ object Evaluator {
       case Term.Fin(n) => Value.Fin(eval(n, env))
       case Term.FZero(n) => Value.FZero(eval(n, env))
       case Term.FSucc(n, term) => Value.FSucc(eval(n, env), eval(term, env))
+      case Term.Eq(typ, left, right) => Value.Eq(eval(typ, env), eval(left, env), eval(right, env))
+      case Term.Refl(typ, value) => Value.Refl(eval(typ, env), eval(value, env))
+      case Term.EqElim(typ, motive, reflCase, left, right, equality) =>
+        val evaluatedReflCase = eval(reflCase, env)
+        eval(equality, env) match {
+          case Value.Refl(_, z) => evaluatedReflCase(z)
+          case Value.Neutral(neutral) => Value.Neutral(Neutral.EqElim(eval(typ, env), eval(motive, env), evaluatedReflCase, eval(left, env), eval(right, env), neutral))
+          case v => throw new AssertionError(s"EqElim error: $v")
+        }
     }
 
   def eval(term: CheckableTerm, env: Environment): Value =
@@ -86,7 +95,9 @@ object Evaluator {
     function match {
       case Value.Lambda(function) => function(argument)
       case Value.Neutral(value) => Value.Neutral(Neutral.Application(value, argument))
-      case Value.Fin(_) | Value.FZero(_) | Value.FSucc(_, _) | Value.Nil(_) | Value.Cons(_, _, _, _) | Value.Vec(_, _) | Value.Zero | Value.Succ(_) | Value.* | Value.Nat | Value.Pi(_, _) =>
+      case Value.Eq(_, _, _) | Value.Refl(_, _) | Value.Fin(_) | Value.FZero(_) | Value.FSucc(_, _) |
+           Value.Nil(_) | Value.Cons(_, _, _, _) | Value.Vec(_, _) | Value.Zero | Value.Succ(_) | Value.* |
+           Value.Nat | Value.Pi(_, _) =>
         throw new AssertionError(s"Cannot apply $function as a function")
     }
 

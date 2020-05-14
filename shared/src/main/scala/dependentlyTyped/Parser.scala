@@ -96,8 +96,20 @@ object Parser extends RegexParsers {
     case motive ~ zeroCase ~ succCase ~ n ~ fin => FinElim(motive, zeroCase, succCase, n, fin)
   }
 
+  lazy val eq: Parser[Eq] = "Eq" ~> argument ~ argument ~ argument ^^ {
+    case typ ~ left ~ right => Eq(typ, left, right)
+  }
+
+  lazy val eqElim: Parser[EqElim] = "eqElim" ~> argument ~ argument ~ argument ~ argument ~ argument ~ argument ^^ {
+    case typ ~ motive ~ reflCase ~ left ~ right ~ equality => EqElim(typ, motive, reflCase, left, right, equality)
+  }
+
+  lazy val refl: Parser[Refl] = "Refl" ~> argument ~ argument ^^ {
+    case typ ~ value => Refl(typ, value)
+  }
+
   lazy val maybeApplicationTerm: Parser[InferrableTerm] =
-    (finElim | fin | fZero | fSucc | nil | cons | vec | vecElim | natElim | succ | simpleTerm) ~ rep(argument) ^^ {
+    (refl | eqElim | eq | finElim | fin | fZero | fSucc | nil | cons | vec | vecElim | natElim | succ | simpleTerm) ~ rep(argument) ^^ {
       case term ~ List() => term
       case function ~ arguments => arguments.foldLeft(function)((curriedFunction, arg) => Application(curriedFunction, arg))
     }
@@ -161,6 +173,12 @@ object Parser extends RegexParsers {
       case FSucc(n, term) => FSucc(n.substitute(name, i), term.substitute(name, i))
       case FinElim(motive, zeroCase, succCase, n, fin) =>
         FinElim(motive.substitute(name, i), zeroCase.substitute(name, i), succCase.substitute(name, i), n.substitute(name, i), fin.substitute(name, i))
+      case Eq(typ, left, right) =>
+        Eq(typ.substitute(name, i), left.substitute(name, i), right.substitute(name, i))
+      case EqElim(typ, motive, reflCase, left, right, equality) =>
+        EqElim(typ.substitute(name, i), motive.substitute(name, i), reflCase.substitute(name, i), left.substitute(name, i), right.substitute(name, i), equality.substitute(name, i))
+      case Refl(typ, value) =>
+        Refl(typ.substitute(name, i), value.substitute(name, i))
     }
   }
 

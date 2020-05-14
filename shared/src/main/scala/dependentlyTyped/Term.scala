@@ -90,6 +90,18 @@ object Term {
     override def freeVariables: Seq[Name] = motive.freeVariables ++ zeroCase.freeVariables ++ succCase.freeVariables ++ n.freeVariables ++ fin.freeVariables
   }
 
+  case class Eq(typ: CheckableTerm, left: CheckableTerm, right: CheckableTerm) extends InferrableTerm {
+    override def freeVariables: Seq[Name] = typ.freeVariables ++ left.freeVariables ++ right.freeVariables
+  }
+
+  case class EqElim(typ: CheckableTerm, motive: CheckableTerm, reflCase: CheckableTerm, left: CheckableTerm, right: CheckableTerm, equality: CheckableTerm) extends InferrableTerm {
+    override def freeVariables: Seq[Name] = motive.freeVariables ++ reflCase.freeVariables ++ left.freeVariables ++ right.freeVariables ++ equality.freeVariables
+  }
+
+  case class Refl(typ: CheckableTerm, value: CheckableTerm) extends InferrableTerm {
+    override def freeVariables: Seq[Name] = typ.freeVariables ++ value.freeVariables
+  }
+
   case class Inf(term: InferrableTerm) extends CheckableTerm {
     override def freeVariables: Seq[Name] = term.freeVariables
   }

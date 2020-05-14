@@ -53,6 +53,10 @@ object InterpreterState {
     .interpret("let FZero = (λn -> FZero n) :: ∀ (n :: Nat) . Fin (Succ n)")
     .interpret("let FSucc = (λn f -> FSucc n f) :: ∀ (n :: Nat) . Fin n -> Fin (Succ n)")
     .interpret("let finElim = (λm mz ms k f -> finElim m mz ms k f) :: ∀ (m :: ∀ (n :: Nat) . Fin n -> *) . (∀ n :: Nat . m (Succ n) (FZero n)) -> (∀ (n :: Nat) (f :: Fin n) . m n f -> m (Succ n) (FSucc n f)) -> ∀ (n :: Nat) (f :: Fin n) . m n f")
+    .interpret("let Refl = (λa x -> Refl a x) :: ∀ (a :: *) (x :: a) . Eq a x x")
+    .interpret("let Eq = (λa x y -> Eq a x y) :: ∀ (a :: *) . a -> a -> *")
+    .interpret("let eqElim = (λa m mr l r e -> eqElim a m mr l r e) :: ∀ (a :: *) (m :: ∀ (l :: a) (r :: a) . (Eq a l r) -> *) . (∀ v :: a . m v v (Refl a v)) -> ∀ (l :: a) (r :: a) (e :: Eq a l r) . m l r e")
+
 
   val prelude: InterpreterState = initial
     .interpret("""let id = (\ a x -> x) :: forall (a :: *) . a -> a""")
@@ -91,34 +95,6 @@ object InterpreterState {
         |     (forall n :: Nat . m (Succ (Succ n)) -> m (Succ (Succ (Succ n)))) ->
         |     forall (n :: Nat) . m n""".stripMargin)
     .interpret("""let inc = natFold Nat (Succ Zero) Succ""")
-    .interpret(
-      """let replicate =
-        |  ( natElim
-        |      ( \ n -> forall (a :: *) . a -> Vec a n )
-        |      ( \ a _ -> Nil a )
-        |      ( \ n' rec_n' a x -> Cons a n' x (rec_n' a x) ) )
-        |  :: forall (n :: Nat) . forall (a :: *) . a -> Vec a n""".stripMargin)
-    .interpret(
-      """let replicate' =
-        |  (\ a n x -> natElim (Vec a)
-        |                      (Nil a)
-        |                      (\ n' rec_n' -> Cons a n' x rec_n') n)
-        |  :: forall (a :: *) (n :: Nat) . a -> Vec a n""".stripMargin)
-    .interpret(
-      """let fromto =
-        |  natElim
-        |    ( \ n -> Vec Nat n )
-        |    ( Nil Nat )
-        |    ( \ n' rec_n' -> Cons Nat n' n' rec_n' )""".stripMargin)
-    .interpret(
-      """let append =
-        |  ( \ a -> vecElim a
-        |             (\ m _ -> forall (n :: Nat) . Vec a n -> Vec a (plus m n))
-        |             (\ _ v -> v)
-        |             (\ m v vs rec n w -> Cons a (plus m n) v (rec n w)))
-        |  ::  forall (a :: *) (m :: Nat) (v :: Vec a m) (n :: Nat) (w :: Vec a n).
-        |      Vec a (plus m n)
-        |""".stripMargin)
     .interpret(
       """let finNat = finElim (\ _ _ -> Nat)
         |                     (\ _ -> Zero)
@@ -226,10 +202,138 @@ object InterpreterState {
         |    (\ n' rec -> rec)
         |  :: forall (n :: Nat) . Prop (natEq n n)""".stripMargin)
     .interpret("""let Not = (\ a -> a -> Void) :: * -> *""")
-//    .interpret("""""")
-//    .interpret("""""")
-//    .interpret("""""")
-//    .interpret("""""")
+    .interpret(
+      """let leibniz =
+        |  ( \ a b f -> eqElim a
+        |                 (\ x y eq_x_y -> Eq b (f x) (f y))
+        |                 (\ x -> Refl b (f x)) )
+        |  :: forall (a :: *) (b :: *) (f :: a -> b) (x :: a) (y :: a) .
+        |     Eq a x y -> Eq b (f x) (f y)""".stripMargin)
+    .interpret(
+      """let symm =
+        |  ( \ a -> eqElim a
+        |             (\ x y eq_x_y -> Eq a y x)
+        |             (\ x -> Refl a x) )
+        |  :: forall (a :: *) (x :: a) (y :: a) .
+        |     Eq a x y -> Eq a y x
+        |""".stripMargin)
+    .interpret(
+      """let tran =
+        |  ( \ a x y z eq_x_y -> eqElim a
+        |                          (\ x y eq_x_y -> forall (z :: a) . Eq a y z -> Eq a x z)
+        |                          (\ x z eq_x_z -> eq_x_z)
+        |                          x y eq_x_y z )
+        |  :: forall (a :: *) (x :: a) (y :: a) (z :: a) .
+        |     Eq a x y -> Eq a y z -> Eq a x z""".stripMargin)
+    .interpret(
+      """let apply =
+        |  eqElim * (\ a b _ -> a -> b) (\ _ x -> x)
+        |  :: forall (a :: *) (b :: *) (p :: Eq * a b) . a -> b""".stripMargin)
+    .interpret(
+      """let p1IsNot0 =
+        |  (\ p -> apply Unit Void
+        |                (leibniz Nat *
+        |                         (natElim (\ _ -> *) Void (\ _ _ -> Unit))
+        |                         1 0 p)
+        |                U)
+        |  :: Not (Eq Nat 1 0)""".stripMargin)
+    .interpret(
+      """let p0IsNot1 =
+        |  (\ p -> p1IsNot0 (symm Nat 0 1 p))
+        |  :: Not (Eq Nat 0 1)""".stripMargin)
+    .interpret(
+      """let p0IsNoSucc =
+        |  natElim
+        |    ( \ n -> Not (Eq Nat 0 (Succ n)) )
+        |    p0IsNot1
+        |    ( \ n' rec_n' eq_0_SSn' ->
+        |      rec_n' (leibniz Nat Nat pred Zero (Succ (Succ n')) eq_0_SSn') )""".stripMargin)
+    .interpret(
+      """let replicate =
+        |  ( natElim
+        |      ( \ n -> forall (a :: *) . a -> Vec a n )
+        |      ( \ a _ -> Nil a )
+        |      ( \ n' rec_n' a x -> Cons a n' x (rec_n' a x) ) )
+        |  :: forall (n :: Nat) . forall (a :: *) . a -> Vec a n""".stripMargin)
+    .interpret(
+      """let replicate' =
+        |  (\ a n x -> natElim (Vec a)
+        |                      (Nil a)
+        |                      (\ n' rec_n' -> Cons a n' x rec_n') n)
+        |  :: forall (a :: *) (n :: Nat) . a -> Vec a n""".stripMargin)
+    .interpret(
+      """let fromto =
+        |  natElim
+        |    ( \ n -> Vec Nat n )
+        |    ( Nil Nat )
+        |    ( \ n' rec_n' -> Cons Nat n' n' rec_n' )""".stripMargin)
+    .interpret(
+      """let append =
+        |  ( \ a -> vecElim a
+        |             (\ m _ -> forall (n :: Nat) . Vec a n -> Vec a (plus m n))
+        |             (\ _ v -> v)
+        |             (\ m v vs rec n w -> Cons a (plus m n) v (rec n w)))
+        |  ::  forall (a :: *) (m :: Nat) (v :: Vec a m) (n :: Nat) (w :: Vec a n).
+        |      Vec a (plus m n)
+        |""".stripMargin)
+    .interpret(
+      """let tail' =
+        |  (\ a -> vecElim a ( \ m v -> forall (n :: Nat) . Eq Nat m (Succ n) -> Vec a n )
+        |                    ( \ n eq_0_SuccN -> voidElim ( \ _ -> Vec a n )
+        |                                                 ( p0IsNoSucc n eq_0_SuccN ) )
+        |                    ( \ m' v vs rec_m' n eq_SuccM'_SuccN ->
+        |                      eqElim Nat
+        |                             (\ m' n e -> Vec a m' -> Vec a n)
+        |                             (\ _ v -> v)
+        |                             m' n
+        |                             (leibniz Nat Nat pred (Succ m') (Succ n) eq_SuccM'_SuccN) vs))
+        |  :: forall (a :: *) (m :: Nat) . Vec a m -> forall (n :: Nat) . Eq Nat m (Succ n) -> Vec a n""".stripMargin)
+    .interpret(
+      """let tail =
+        |  (\ a n v -> tail' a (Succ n) v n (Refl Nat (Succ n)))
+        |  :: forall (a :: *) (n :: Nat) . Vec a (Succ n) -> Vec a n""".stripMargin)
+    .interpret(
+      """let at =
+        |  (\ a -> vecElim a ( \ n v -> Fin n -> a )
+        |                    ( \ f -> voidElim (\ _ -> a) f )
+        |                    ( \ n' v vs rec_n' f_SuccN' ->
+        |                      finElim ( \ n _ -> Eq Nat n (Succ n') -> a )
+        |                              ( \ n e -> v )
+        |                              ( \ n f_N _ eq_SuccN_SuccN' ->
+        |                                rec_n' (eqElim Nat
+        |                                               (\ x y e -> Fin x -> Fin y)
+        |                                               (\ _ f -> f)
+        |                                               n n'
+        |                                               (leibniz Nat Nat pred
+        |                                                        (Succ n) (Succ n') eq_SuccN_SuccN')
+        |                                               f_N))
+        |                              (Succ n')
+        |                              f_SuccN'
+        |                              (Refl Nat (Succ n'))))
+        |  :: forall (a :: *) (n :: Nat) . Vec a n -> Fin n -> a""".stripMargin)
+    .interpret(
+      """let head =
+        |  (\ a n v -> at a (Succ n) v (FZero n))
+        |  :: forall (a :: *) (n :: Nat) . Vec a (Succ n) -> a""".stripMargin)
+    .interpret(
+      """let map =
+        |  (\ a b f -> vecElim a ( \ n _ -> Vec b n )
+        |                        ( Nil b )
+        |                        ( \ n x _ rec -> Cons b n (f x) rec ))
+        |  :: forall (a :: *) (b :: *) (f :: a -> b) (n :: Nat) . Vec a n -> Vec b n""".stripMargin)
+    .interpret(
+      """let p0PlusNisN =
+        |  Refl Nat
+        |  :: forall n :: Nat . Eq Nat (plus 0 n) n""".stripMargin)
+    .interpret(
+      """let pNPlus0isN =
+        |  natElim ( \ n -> Eq Nat (plus n 0) n )
+        |          ( Refl Nat 0 )
+        |          ( \ n' rec -> leibniz Nat Nat Succ (plus n' 0) n' rec )
+        |  :: forall n :: Nat . Eq Nat (plus n 0) n
+        |""".stripMargin)
+  //    .interpret("""""")
+
 }
 
 case class InterpreterState(letBindings: Map[String, Value] = Map.empty, assumptions: Map[String, Type] = Map.empty) {

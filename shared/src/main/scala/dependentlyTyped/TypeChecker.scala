@@ -124,6 +124,35 @@ object TypeChecker {
           substitutedTerm = resultType.substitute(0, FreeVariable(freshName))
           _ <- checkType(substitutedTerm, Value.*, Γ.withLocalType(bindersPassed, evaluatedArgumentType), environment, bindersPassed + 1)
         } yield Value.*
+      case Eq(typ, left, right) =>
+        for {
+          _ <- checkType(typ, Value.*, Γ, environment, bindersPassed)
+          evaluatedType = Evaluator.eval(typ, environment)
+          _ <- checkType(left, evaluatedType, Γ, environment, bindersPassed)
+          _ <- checkType(right, evaluatedType, Γ, environment, bindersPassed)
+        } yield Value.*
+      case Refl(typ, value) =>
+        for {
+          _ <- checkType(typ, Value.*, Γ, environment, bindersPassed)
+          evaluatedType = Evaluator.eval(typ, environment)
+          _ <- checkType(value, evaluatedType, Γ, environment, bindersPassed)
+          evaluatedValue = Evaluator.eval(value, environment)
+        } yield Value.Eq(evaluatedType, evaluatedValue, evaluatedValue)
+      case EqElim(typ, motive, reflCase, left, right, equality) =>
+        for {
+          _ <- checkType(typ, Value.*, Γ, environment, bindersPassed)
+          _ <- checkType(typ, Value.*, Γ, environment, bindersPassed)
+          evaluatedType = Evaluator.eval(typ, environment)
+          expectedMotiveType = Value.Pi(evaluatedType, x => Value.Pi(evaluatedType, y => Value.Pi(Value.Eq(evaluatedType, x, y), _ => Value.*)))
+          _ <- checkType(motive, expectedMotiveType, Γ, environment, bindersPassed)
+          evaluatedMotive = Evaluator.eval(motive, environment)
+          // ...
+          _ <- checkType(left, evaluatedType, Γ, environment, bindersPassed)
+          evaluatedLeft = Evaluator.eval(left, environment)
+          _ <- checkType(right, evaluatedType, Γ, environment, bindersPassed)
+          evaluatedRight = Evaluator.eval(right, environment)
+          evaluatedEquality = Evaluator.eval(equality, environment)
+        } yield evaluatedMotive(evaluatedLeft)(evaluatedRight)(evaluatedEquality)
     }
 
   @tailrec

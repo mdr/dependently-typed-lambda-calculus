@@ -20,6 +20,8 @@ object Quoter {
       case Value.Fin(n) => Term.Fin(quote(n, bindersPassed))
       case Value.FZero(n) => Term.FZero(quote(n, bindersPassed))
       case Value.FSucc(n, term) => Term.FSucc(quote(n, bindersPassed), quote(term, bindersPassed))
+      case Value.Eq(typ, left, right) => Term.Eq(quote(typ, bindersPassed), quote(left, bindersPassed), quote(right, bindersPassed))
+      case Value.Refl(typ, value) => Term.Refl(quote(typ, bindersPassed), quote(value, bindersPassed))
     }
 
   private def quote(neutral: Neutral, bindersPassed: Int): InferrableTerm =
@@ -31,6 +33,8 @@ object Quoter {
         Term.VecElim(quote(elementType, bindersPassed), quote(motive, bindersPassed), quote(nilCase, bindersPassed), quote(consCase, bindersPassed), quote(length, bindersPassed), quote(vector, bindersPassed))
       case Neutral.FinElim(motive, zeroCase, succCase, n, fin) =>
         Term.FinElim(quote(motive, bindersPassed), quote(zeroCase, bindersPassed), quote(succCase, bindersPassed), quote(n, bindersPassed), quote(fin, bindersPassed))
+      case Neutral.EqElim(typ, motive, reflCase, left, right, equality) =>
+        Term.EqElim(quote(typ, bindersPassed), quote(motive, bindersPassed), quote(reflCase, bindersPassed), quote(left, bindersPassed), quote(right, bindersPassed), quote(equality, bindersPassed))
     }
 
   private def boundFree(name: Name, bindersPassed: Int): InferrableTerm = name match {

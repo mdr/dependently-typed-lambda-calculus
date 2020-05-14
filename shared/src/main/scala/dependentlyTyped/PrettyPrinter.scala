@@ -41,6 +41,9 @@ object PrettyPrinter {
           case Term.FZero(_) => true
           case Term.FSucc(_, _) => true
           case Term.FinElim(_, _, _, _, _) => true
+          case Term.Eq(_, _, _) => true
+          case Term.EqElim(_, _, _, _, _, _) => true
+          case Term.Refl(_, _) => true
         }
         val parensForArg = cond(argument) {
           case Term.Inf(Term.Application(_, _)) => true
@@ -56,6 +59,9 @@ object PrettyPrinter {
           case Term.Inf(Term.Fin(_)) => true
           case Term.Inf(Term.FZero(_)) => true
           case Term.Inf(Term.FSucc(_, _)) => true
+          case Term.Inf(Term.Eq(_, _, _)) => true
+          case Term.Inf(Term.EqElim(_, _, _, _, _, _)) => true
+          case Term.Inf(Term.Refl(_, _)) => true
           case Term.Lambda(_) => true
         }
         val prettyPrintedFunction = maybeParens(parensForFunction, prettyPrint(function, nameSupplier))
@@ -111,6 +117,23 @@ object PrettyPrinter {
         val prettyPrintedN = s"${prettyPrintWithParensIfNeeded(n, nameSupplier)}"
         val prettyPrintedFin = s"${prettyPrintWithParensIfNeeded(fin, nameSupplier)}"
         s"finElim $prettyPrintedMotive $prettyPrintedZeroCase $prettyPrintedSuccCase $prettyPrintedN $prettyPrintedFin"
+      case Term.EqElim(typ, motive, reflCase, left, right, equality) =>
+        val prettyPrintedTyp = s"${prettyPrintWithParensIfNeeded(typ, nameSupplier)}"
+        val prettyPrintedMotive = s"${prettyPrintWithParensIfNeeded(motive, nameSupplier)}"
+        val prettyPrintedReflCase = s"${prettyPrintWithParensIfNeeded(reflCase, nameSupplier)}"
+        val prettyPrintedLeft = s"${prettyPrintWithParensIfNeeded(left, nameSupplier)}"
+        val prettyPrintedRight = s"${prettyPrintWithParensIfNeeded(right, nameSupplier)}"
+        val prettyPrintedEquality = s"${prettyPrintWithParensIfNeeded(equality, nameSupplier)}"
+        s"eqElim $prettyPrintedTyp $prettyPrintedMotive $prettyPrintedReflCase $prettyPrintedLeft $prettyPrintedRight $prettyPrintedEquality"
+      case Term.Eq(typ, left, right) =>
+        val prettyPrintedTyp = s"${prettyPrintWithParensIfNeeded(typ, nameSupplier)}"
+        val prettyPrintedLeft = s"${prettyPrintWithParensIfNeeded(left, nameSupplier)}"
+        val prettyPrintedRight = s"${prettyPrintWithParensIfNeeded(right, nameSupplier)}"
+        s"Eq $prettyPrintedTyp $prettyPrintedLeft $prettyPrintedRight"
+      case Term.Refl(typ, value) =>
+        val prettyPrintedTyp = s"${prettyPrintWithParensIfNeeded(typ, nameSupplier)}"
+        val prettyPrintedValue = s"${prettyPrintWithParensIfNeeded(value, nameSupplier)}"
+        s"Refl $prettyPrintedTyp $prettyPrintedValue"
       case Term.Pi(argumentType, resultType) =>
         if (!containsBoundVariable(resultType, 0)) {
           prettyPrintFunctionType(argumentType, resultType, nameSupplier)
@@ -138,6 +161,9 @@ object PrettyPrinter {
       case Term.Inf(Term.FZero(_)) => true
       case Term.Inf(Term.FSucc(_, _)) => true
       case Term.Inf(Term.FinElim(_, _, _, _, _)) => true
+      case Term.Inf(Term.Eq(_, _, _)) => true
+      case Term.Inf(Term.EqElim(_, _, _, _, _, _)) => true
+      case Term.Inf(Term.Refl(_, _)) => true
       case Term.Lambda(_) => true
     }
   }
@@ -194,6 +220,12 @@ object PrettyPrinter {
       case Term.FSucc(m, term) => containsBoundVariable(m, n) || containsBoundVariable(term, n)
       case Term.FinElim(motive, zeroCase, succCase, num, fin) =>
         containsBoundVariable(motive, n) || containsBoundVariable(zeroCase, n) || containsBoundVariable(succCase, n) || containsBoundVariable(num, n) || containsBoundVariable(fin, n)
+      case Term.Eq(typ, left, right) =>
+        containsBoundVariable(typ, n) || containsBoundVariable(left, n) || containsBoundVariable(right, n)
+      case Term.EqElim(typ, motive, reflCase, left, right, equality) =>
+        containsBoundVariable(typ, n) || containsBoundVariable(motive, n) || containsBoundVariable(reflCase, n) || containsBoundVariable(left, n) || containsBoundVariable(right, n) || containsBoundVariable(equality, n)
+      case Term.Refl(typ, value) =>
+        containsBoundVariable(typ, n) || containsBoundVariable(value, n)
     }
 
   case class TraversedPi(argumentName: String, argType: CheckableTerm)

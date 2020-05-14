@@ -11,6 +11,7 @@ object Substitutions {
       case FreeVariable(name) => FreeVariable(name)
       case Application(function, argument) => Application(function.substitute(i, replacement), argument.substitute(i, replacement))
       case Term.* => Term.*
+      case Pi(argumentType, resultType) => Pi(argumentType.substitute(i, replacement), resultType.substitute(i + 1, replacement))
       case Nat => Nat
       case Zero => Zero
       case Succ(term) => Succ(term.substitute(i, replacement))
@@ -25,7 +26,11 @@ object Substitutions {
       case FSucc(n, term) => FSucc(n.substitute(i, replacement), term.substitute(i, replacement))
       case FinElim(motive, zeroCase, succCase, n, fin) =>
         FinElim(motive.substitute(i, replacement), zeroCase.substitute(i, replacement), succCase.substitute(i, replacement), n.substitute(i, replacement), fin.substitute(i, replacement))
-      case Pi(argumentType, resultType) => Pi(argumentType.substitute(i, replacement), resultType.substitute(i + 1, replacement))
+      case Eq(typ, left, right) => Eq(typ.substitute(i, replacement), left.substitute(i, replacement), right.substitute(i, replacement))
+      case EqElim(typ, motive, reflCase, left, right, equality) =>
+        EqElim(typ.substitute(i, replacement), motive.substitute(i, replacement), reflCase.substitute(i, replacement), left.substitute(i, replacement), right.substitute(i, replacement), equality.substitute(i, replacement))
+      case Refl(typ, value) =>
+        Refl(typ.substitute(i, replacement), value.substitute(i, replacement))
     }
   }
 
