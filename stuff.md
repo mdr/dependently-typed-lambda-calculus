@@ -13,4 +13,3 @@ cabal run -w ghc-7.4.2
 `docker run -it --rm -v /Users/matt/repos/LambdaPi:/code lambda-pi bash -c 'cd /code && PATH=$PATH:/opt/ghc/bin/ cabal run -w ghc-7.4.2'`
 
 * Why does Haskell implementation not include type checker for FinElim?
-* Tidy up pretty-printer

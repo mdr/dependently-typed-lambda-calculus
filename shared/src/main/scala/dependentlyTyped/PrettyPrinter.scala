@@ -30,42 +30,18 @@ object PrettyPrinter {
       case Term.Application(function, argument) =>
         val parensForFunction = cond(function) {
           case Term.Annotated(_, _) => true
-          case Term.Succ(_) if !isNum(function) => true
           case Term.Pi(_, _) => true
-          case Term.Nil(_) => true
-          case Term.Cons(_, _, _, _) => true
-          case Term.Vec(_, _) => true
-          case Term.NatElim(_, _, _, _) => true
-          case Term.VecElim(_, _, _, _, _, _) => true
-          case Term.Fin(_) => true
-          case Term.FZero(_) => true
-          case Term.FSucc(_, _) => true
-          case Term.FinElim(_, _, _, _, _) => true
-          case Term.Eq(_, _, _) => true
-          case Term.EqElim(_, _, _, _, _, _) => true
-          case Term.Refl(_, _) => true
         }
-        val parensForArg = cond(argument) {
-          case Term.Inf(Term.Application(_, _)) => true
-          case Term.Inf(Term.Annotated(_, _)) => true
-          case Term.Inf(succ@Term.Succ(_)) if !isNum(succ) => true
-          case Term.Inf(Term.Pi(_, _)) => true
-          case Term.Inf(Term.Nil(_)) => true
-          case Term.Inf(Term.Cons(_, _, _, _)) => true
-          case Term.Inf(Term.Vec(_, _)) => true
-          case Term.Inf(Term.NatElim(_, _, _, _)) => true
-          case Term.Inf(Term.VecElim(_, _, _, _, _, _)) => true
-          case Term.Inf(Term.FinElim(_, _, _, _, _)) => true
-          case Term.Inf(Term.Fin(_)) => true
-          case Term.Inf(Term.FZero(_)) => true
-          case Term.Inf(Term.FSucc(_, _)) => true
-          case Term.Inf(Term.Eq(_, _, _)) => true
-          case Term.Inf(Term.EqElim(_, _, _, _, _, _)) => true
-          case Term.Inf(Term.Refl(_, _)) => true
-          case Term.Lambda(_) => true
+        val omitParensForArg = cond(argument) {
+          case Term.Inf(Term.Zero) => true
+          case Term.Inf(Term.*) => true
+          case Term.Inf(Term.Nat) => true
+          case Term.Inf(succ@Term.Succ(_)) => isNum(succ)
+          case Term.Inf(Term.FreeVariable(_)) => true
+          case Term.Inf(Term.BoundVariable(_)) => true
         }
         val prettyPrintedFunction = maybeParens(parensForFunction, prettyPrint(function, nameSupplier))
-        val prettyPrintedArgument = maybeParens(parensForArg, prettyPrint(argument, nameSupplier))
+        val prettyPrintedArgument = maybeParens(!omitParensForArg, prettyPrint(argument, nameSupplier))
         s"$prettyPrintedFunction $prettyPrintedArgument"
       case Term.* => "*"
       case Term.Nat => "ℕ"
@@ -135,38 +111,24 @@ object PrettyPrinter {
         val prettyPrintedValue = s"${prettyPrintWithParensIfNeeded(value, nameSupplier)}"
         s"Refl $prettyPrintedTyp $prettyPrintedValue"
       case Term.Pi(argumentType, resultType) =>
-        if (!containsBoundVariable(resultType, 0)) {
+        if (!containsBoundVariable(resultType, 0))
           prettyPrintFunctionType(argumentType, resultType, nameSupplier)
-        } else {
+        else
           prettyPrintPiType(term, nameSupplier)
-        }
     }
 
-  private def prettyPrintWithParensIfNeeded(subTerm: CheckableTerm, nameSupplier: NameSupplier) = {
+  private def prettyPrintWithParensIfNeeded(subTerm: CheckableTerm, nameSupplier: NameSupplier): String =
     maybeParens(needsParens(subTerm), prettyPrint(subTerm, nameSupplier))
-  }
 
-  private def needsParens(subTerm: CheckableTerm) = {
-    cond(subTerm) {
-      case Term.Inf(Term.Application(_, _)) => true
-      case Term.Inf(Term.Annotated(_, _)) => true
-      case Term.Inf(succ@Term.Succ(_)) => !isNum(succ)
-      case Term.Inf(Term.Pi(_, _)) => true
-      case Term.Inf(Term.Nil(_)) => true
-      case Term.Inf(Term.Cons(_, _, _, _)) => true
-      case Term.Inf(Term.Vec(_, _)) => true
-      case Term.Inf(Term.NatElim(_, _, _, _)) => true
-      case Term.Inf(Term.VecElim(_, _, _, _, _, _)) => true
-      case Term.Inf(Term.Fin(_)) => true
-      case Term.Inf(Term.FZero(_)) => true
-      case Term.Inf(Term.FSucc(_, _)) => true
-      case Term.Inf(Term.FinElim(_, _, _, _, _)) => true
-      case Term.Inf(Term.Eq(_, _, _)) => true
-      case Term.Inf(Term.EqElim(_, _, _, _, _, _)) => true
-      case Term.Inf(Term.Refl(_, _)) => true
-      case Term.Lambda(_) => true
+  private def needsParens(subTerm: CheckableTerm): Boolean =
+    !cond(subTerm) {
+      case Term.Inf(Term.Zero) => true
+      case Term.Inf(Term.*) => true
+      case Term.Inf(Term.Nat) => true
+      case Term.Inf(succ@Term.Succ(_)) => isNum(succ)
+      case Term.Inf(Term.FreeVariable(_)) => true
+      case Term.Inf(Term.BoundVariable(_)) => true
     }
-  }
 
   private def prettyPrintPiType(term: InferrableTerm, nameSupplier: NameSupplier): String = {
     val PiCollectorResult(traversedPis, ultimateResultType, newNameSupplier) = collectPis(term, nameSupplier)

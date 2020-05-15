@@ -30,12 +30,15 @@ class PrettyPrinterSpec extends AnyFlatSpec with Matchers {
     simpleCheck("x ((λa -> a) :: b)")
     simpleCheck("a (b c)")
     simpleCheck("m 0 (Nil a)")
+    simpleCheck("(λb a -> Vec b a) :: c")
 
     simpleCheck("a b c")
     simpleCheck("(a -> b) c")
     simpleCheck("* c")
     simpleCheck("(∀ (a :: *) . a) c")
     simpleCheck("((λa -> a) :: b) c")
+    simpleCheck("eqElim a b c d e f g")
+    simpleCheck("3 a")
   }
 
   it should "work for nested lambdas" in {
