@@ -10,7 +10,7 @@ object SimplyTypedTab {
                            history: Seq[HistoryEntry] = Seq.empty)
 
   val simplyTypedTab =
-    ScalaComponent.builder[Unit]("App")
+    ScalaComponent.builder[Unit]("SimplyTypedTab")
       .initialState(State())
       .renderBackend[Backend]
       .build

@@ -16,6 +16,7 @@ class PrettyPrinterSpec extends AnyFlatSpec with Matchers {
     simpleCheck("a -> b")
     simpleCheck("a -> *")
     simpleCheck("a -> b -> c")
+    simpleCheck("Eq a l r -> *")
     simpleCheck("∀ (a :: *) . a -> b")
     simpleCheck("∀ (a :: ℕ) (b :: Bool) . b a")
     simpleCheck("∀ (a :: *) (b :: a) . b")

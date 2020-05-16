@@ -10,7 +10,7 @@ object DependentlyTypedTab {
                    history: Seq[HistoryEntry] = Seq.empty)
 
   val dependentlyTypedTab =
-    ScalaComponent.builder[Unit]("App")
+    ScalaComponent.builder[Unit]("DependentlyTypedTab")
       .initialState(State())
       .renderBackend[Backend]
       .build

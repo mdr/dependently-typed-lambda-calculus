@@ -332,7 +332,6 @@ object InterpreterState {
         |          ( \ n' rec -> leibniz Nat Nat Succ (plus n' 0) n' rec )
         |  :: forall n :: Nat . Eq Nat (plus n 0) n
         |""".stripMargin)
-  //    .interpret("""""")
 
 }
 
