@@ -11,7 +11,7 @@ object BindingsTable {
         val rows = interpreterState.Γ.infoByName.toSeq
           .sortBy { case (name, y) => interpreterState.letBindings.getOrElse(name.toString, "").toString.length + y.toString.length }
           .collect { case (Name.Global(name), typ) =>
-            <.tr(
+            <.tr(^.key := name,
               <.td(<.code(name)),
               <.td(<.code(interpreterState.letBindings.getOrElse(name, "").toString)),
               <.td(<.code(typ.toString))

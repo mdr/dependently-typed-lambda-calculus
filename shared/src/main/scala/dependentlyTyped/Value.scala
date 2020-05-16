@@ -2,7 +2,7 @@ package dependentlyTyped
 
 sealed trait Value {
 
-  override def toString: String = Quoter.quote(this).toString
+  override lazy val toString: String = Quoter.quote(this).toString
 
   def apply(argument: Value): Type = Evaluator.apply(this, argument)
 
