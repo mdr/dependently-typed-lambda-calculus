@@ -44,7 +44,7 @@ object SimplyTypedTab {
           <.button(^.`class` := "btn btn-outline-secondary", ^.`type` := "button", "Reset", ^.onClick --> onReset),
         ),
         <.p(),
-        <.div(^.`class` := "collapse show", ^.id := "instructions-table",
+        <.div(^.`class` := "collapse", ^.id := "instructions-table",
           InstructionsTable.instructionsTable(),
           <.p()),
         <.p(),
