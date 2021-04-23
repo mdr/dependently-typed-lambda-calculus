@@ -1,15 +1,15 @@
 import sbtcrossproject.CrossPlugin.autoImport.crossProject
 
-ThisBuild / scalaVersion := "2.13.1"
+ThisBuild / scalaVersion := "2.13.5"
 
 lazy val root = project.in(file(".")).
-  aggregate(foo.js, foo.jvm).
+  aggregate(proj.js, proj.jvm).
   settings(
     publish := {},
     publishLocal := {},
   )
 
-lazy val foo = crossProject(JSPlatform, JVMPlatform).in(file(".")).
+lazy val proj = crossProject(JSPlatform, JVMPlatform).in(file(".")).
   settings(
     name := "dependently-typed-lambda-calculus",
     version := "0.1",
@@ -26,6 +26,6 @@ lazy val foo = crossProject(JSPlatform, JVMPlatform).in(file(".")).
     scalaJSUseMainModuleInitializer := true,
     mainClass in Compile := Some("Main"),
     scalacOptions := Seq("-unchecked", "-deprecation"),
-    libraryDependencies += "com.github.japgolly.scalajs-react" %%% "core" % "1.6.0",
-    libraryDependencies += "com.github.japgolly.scalajs-react" %%% "extra" % "1.6.0"
+    libraryDependencies += "com.github.japgolly.scalajs-react" %%% "core" % "1.7.7",
+    libraryDependencies += "com.github.japgolly.scalajs-react" %%% "extra" % "1.7.7"
   )
