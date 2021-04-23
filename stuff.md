@@ -1,3 +1,9 @@
+`~fastOptJS::webpack`
+
+`fullOptJS::webpack`
+
+
+
 `docker run -it -v /Users/matt/repos/LambdaPi:/code --rm registry.gitlab.com/haskell-ci/haskell-ci/ghc-7.4.2:latest bash`
 
 ```cd /code

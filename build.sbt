@@ -21,8 +21,8 @@ lazy val proj = crossProject(JSPlatform, JVMPlatform).in(file(".")).
   jsConfigure(_.enablePlugins(ScalaJSBundlerPlugin)).
   jsSettings(
     npmDependencies in Compile ++= Seq(
-      "react" -> "16.7.0",
-      "react-dom" -> "16.7.0"),
+      "react" -> "17.0.2",
+      "react-dom" -> "17.0.2"),
     scalaJSUseMainModuleInitializer := true,
     mainClass in Compile := Some("Main"),
     scalacOptions := Seq("-unchecked", "-deprecation"),
